@@ -3,82 +3,138 @@
 //     Zepto.js may be freely distributed under the MIT license.
 
 var Zepto = (function() {
-  var undefined, key, $, classList, emptyArray = [], concat = emptyArray.concat, filter = emptyArray.filter, slice = emptyArray.slice,
-    document = window.document,
-    elementDisplay = {}, classCache = {},
-    cssNumber = { 'column-count': 1, 'columns': 1, 'font-weight': 1, 'line-height': 1,'opacity': 1, 'z-index': 1, 'zoom': 1 },
-    fragmentRE = /^\s*<(\w+|!)[^>]*>/,
-    singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
-    tagExpanderRE = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig,
-    rootNodeRE = /^(?:body|html)$/i,
-    capitalRE = /([A-Z])/g,
+  var undefined,
+      key,
+      $,
+      classList,
+      emptyArray = [],
+      concat = emptyArray.concat,
+      filter = emptyArray.filter,
+      slice = emptyArray.slice,
+      document = window.document,
+      elementDisplay = {}, classCache = {},
 
-    // special attributes that should be get/set via method calls
-    methodAttributes = ['val', 'css', 'html', 'text', 'data', 'width', 'height', 'offset'],
+      //css可不加单位的属性
+      cssNumber = { 'column-count': 1, 'columns': 1, 'font-weight': 1, 'line-height': 1,'opacity': 1, 'z-index': 1, 'zoom': 1 },
 
-    adjacencyOperators = [ 'after', 'prepend', 'before', 'append' ],
-    table = document.createElement('table'),
-    tableRow = document.createElement('tr'),
-    containers = {
-      'tr': document.createElement('tbody'),
-      'tbody': table, 'thead': table, 'tfoot': table,
-      'td': tableRow, 'th': tableRow,
-      '*': document.createElement('div')
-    },
-    readyRE = /complete|loaded|interactive/,
-    simpleSelectorRE = /^[\w-]*$/,
-    class2type = {},
-    toString = class2type.toString,
-    zepto = {},
-    camelize, uniq,
-    tempParent = document.createElement('div'),
-    propMap = {
-      'tabindex': 'tabIndex',
-      'readonly': 'readOnly',
-      'for': 'htmlFor',
-      'class': 'className',
-      'maxlength': 'maxLength',
-      'cellspacing': 'cellSpacing',
-      'cellpadding': 'cellPadding',
-      'rowspan': 'rowSpan',
-      'colspan': 'colSpan',
-      'usemap': 'useMap',
-      'frameborder': 'frameBorder',
-      'contenteditable': 'contentEditable'
-    },
-    isArray = Array.isArray ||
-      function(object){ return object instanceof Array }
+      //HTML代码片断的正则<div> <!--->
+      fragmentRE = /^\s*<(\w+|!)[^>]*>/,
+      //单标签正则<div> <div/> <div></div>
+      singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
+      //匹配单闭合标签
+      tagExpanderRE = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig,
+      //匹配根标签
+      rootNodeRE = /^(?:body|html)$/i,
+      //匹配大写
+      capitalRE = /([A-Z])/g,
 
+      // special attributes that should be get/set via method calls
+      //需要提供get和set的方法名
+      methodAttributes = ['val', 'css', 'html', 'text', 'data', 'width', 'height', 'offset'],
+      //相邻节点的一些操作
+      adjacencyOperators = [ 'after', 'prepend', 'before', 'append' ],
+      table = document.createElement('table'),
+      tableRow = document.createElement('tr'),
+      //这里的用途是当需要给tr,tbody,thead,tfoot,td,th设置innerHTMl的时候，需要用其父元素作为容器来装载HTML字符串
+      containers = {
+        'tr': document.createElement('tbody'),
+        'tbody': table, 'thead': table, 'tfoot': table,
+        'td': tableRow, 'th': tableRow,
+        '*': document.createElement('div')
+      },
+      //当DOM ready的时候，document会有以下三种状态的一种
+      readyRE = /complete|loaded|interactive/,
+      //简单选择器
+      simpleSelectorRE = /^[\w-]*$/,
+      class2type = {},
+      toString = class2type.toString,
+      zepto = {},
+      camelize, uniq,
+      tempParent = document.createElement('div'),
+      propMap = {
+        'tabindex': 'tabIndex',
+        'readonly': 'readOnly',
+        'for': 'htmlFor',
+        'class': 'className',
+        'maxlength': 'maxLength',
+        'cellspacing': 'cellSpacing',
+        'cellpadding': 'cellPadding',
+        'rowspan': 'rowSpan',
+        'colspan': 'colSpan',
+        'usemap': 'useMap',
+        'frameborder': 'frameBorder',
+        'contenteditable': 'contentEditable'
+      },
+      isArray = Array.isArray ||
+          function(object){
+            return object instanceof Array
+          };
+
+  //判断一个元素是否匹配给定的选择器
   zepto.matches = function(element, selector) {
-    if (!selector || !element || element.nodeType !== 1) return false
+    if (!selector || !element || element.nodeType !== 1) {
+      return false;
+    }
+    //引用浏览器提供的MatchesSelector方法
     var matchesSelector = element.webkitMatchesSelector || element.mozMatchesSelector ||
-                          element.oMatchesSelector || element.matchesSelector
-    if (matchesSelector) return matchesSelector.call(element, selector)
+                          element.oMatchesSelector || element.matchesSelector;
+    if (matchesSelector) {
+      return matchesSelector.call(element, selector);
+    }
     // fall back to performing a selector:
-    var match, parent = element.parentNode, temp = !parent
-    if (temp) (parent = tempParent).appendChild(element)
-    match = ~zepto.qsa(parent, selector).indexOf(element)
-    temp && tempParent.removeChild(element)
-    return match
-  }
+    //如果浏览器不支持MatchesSelector方法，则将节点放入一个临时div节点，
+    //再通过selector来查找这个div下的节点集，再判断给定的element是否在节点集中，如果在，则返回一个非零(即非false)的数字
+    var match, parent = element.parentNode, temp = !parent;
+    if (temp) (parent = tempParent).appendChild(element);
+    match = ~zepto.qsa(parent, selector).indexOf(element);//-1表示不存在，-1的二进制补码全为1，~(-1)则为0
+    temp && tempParent.removeChild(element);
+    return match;
+  };
 
+  //返回obj的类型，类型存在class2type中
   function type(obj) {
+    //obj为null或者undefined时，直接返回'null'或'undefined'
     return obj == null ? String(obj) :
       class2type[toString.call(obj)] || "object"
   }
 
-  function isFunction(value) { return type(value) == "function" }
-  function isWindow(obj)     { return obj != null && obj == obj.window }
-  function isDocument(obj)   { return obj != null && obj.nodeType == obj.DOCUMENT_NODE }
-  function isObject(obj)     { return type(obj) == "object" }
-  function isPlainObject(obj) {
-    return isObject(obj) && !isWindow(obj) && Object.getPrototypeOf(obj) == Object.prototype
+  //判断是否函数
+  function isFunction(value) {
+    return type(value) == "function";
   }
-  function likeArray(obj) { return typeof obj.length == 'number' }
 
-  function compact(array) { return filter.call(array, function(item){ return item != null }) }
-  function flatten(array) { return array.length > 0 ? $.fn.concat.apply([], array) : array }
-  camelize = function(str){ return str.replace(/-+(.)?/g, function(match, chr){ return chr ? chr.toUpperCase() : '' }) }
+  //判断是否window
+  function isWindow(obj)     {
+    return obj != null && obj == obj.window;
+  }
+  function isDocument(obj)   {
+    return obj != null && obj.nodeType == obj.DOCUMENT_NODE;
+  }
+  function isObject(obj)     {
+    return type(obj) == "object";
+  }
+  //对于通过字面量定义的对象和new Object的对象返回true，new Object时传参数的返回false
+  function isPlainObject(obj) {
+    return isObject(obj) && !isWindow(obj) && Object.getPrototypeOf(obj) == Object.prototype;
+  }
+
+  //是否类数组，比如nodeList，这个只是做最简单的判断，如果给一个对象定义一个值为数据的length属性，它同样会返回true
+  function likeArray(obj) {
+    return typeof obj.length == 'number';
+  }
+
+  //过滤数组的空值，清除给定的参数中的null或undefined，注意0==null,'' == null为false
+  function compact(array) {
+    return filter.call(array, function(item){
+      return item != null;
+    });
+  }
+
+  //扁平化数组，降一维
+  function flatten(array) {
+    return array.length > 0 ? $.fn.concat.apply([], array) : array;
+  }
+  camelize = function(str){ return str.replace(/-+(.)?/g, function(match, chr){ return chr ? chr.toUpperCase() : '' }) };
   function dasherize(str) {
     return str.replace(/::/g, '/')
            .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
@@ -898,8 +954,8 @@ var Zepto = (function() {
   $.zepto = zepto
 
   return $
-})()
+})();
 
 // If `$` is not yet defined, point it to `Zepto`
-window.Zepto = Zepto
-window.$ === undefined && (window.$ = Zepto)
+window.Zepto = Zepto;
+window.$ === undefined && (window.$ = Zepto);
