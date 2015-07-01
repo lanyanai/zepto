@@ -21,7 +21,7 @@ var Zepto = (function() {
       fragmentRE = /^\s*<(\w+|!)[^>]*>/,
       //单标签正则<div> <div/> <div></div>
       singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
-      //匹配单闭合标签
+      //匹配不应该单闭合的标签，类似将<div></div>写成了<div/>
       tagExpanderRE = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig,
       //匹配根标签
       rootNodeRE = /^(?:body|html)$/i,
@@ -95,7 +95,7 @@ var Zepto = (function() {
   function type(obj) {
     //obj为null或者undefined时，直接返回'null'或'undefined'
     return obj == null ? String(obj) :
-      class2type[toString.call(obj)] || "object"
+      class2type[toString.call(obj)] || "object";
   }
 
   //判断是否函数
@@ -134,49 +134,74 @@ var Zepto = (function() {
   function flatten(array) {
     return array.length > 0 ? $.fn.concat.apply([], array) : array;
   }
-  camelize = function(str){ return str.replace(/-+(.)?/g, function(match, chr){ return chr ? chr.toUpperCase() : '' }) };
+
+  //将字符串转成驼峰式的格式
+  camelize = function(str){
+    return str.replace(/-+(.)?/g, function(match, chr) {
+      return chr ? chr.toUpperCase() : '';
+    })
+  };
+
+  //将字符串格式化成-拼接的形式,一般用在样式属性上，比如border-width
   function dasherize(str) {
     return str.replace(/::/g, '/')
            .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
            .replace(/([a-z\d])([A-Z])/g, '$1_$2')
            .replace(/_/g, '-')
-           .toLowerCase()
+           .toLowerCase();
   }
-  uniq = function(array){ return filter.call(array, function(item, idx){ return array.indexOf(item) == idx }) }
 
+  //数组去重，如果该条数据在数组中的位置与循环的索引值不相同，则说明数组中有与其相同的值
+  uniq = function(array){
+    return filter.call(array, function(item, idx){
+      return array.indexOf(item) == idx;
+    })
+  };
+
+  //将给定的参数生成正则
   function classRE(name) {
     return name in classCache ?
-      classCache[name] : (classCache[name] = new RegExp('(^|\\s)' + name + '(\\s|$)'))
+      classCache[name] : (classCache[name] = new RegExp('(^|\\s)' + name + '(\\s|$)'));
   }
 
+  //给需要的样式值后面加上'px'单位，除了cssNumber里面的指定的那些
   function maybeAddPx(name, value) {
-    return (typeof value == "number" && !cssNumber[dasherize(name)]) ? value + "px" : value
+    return (typeof value == "number" && !cssNumber[dasherize(name)]) ? value + "px" : value;
   }
 
+  //获取节点的默认display
   function defaultDisplay(nodeName) {
-    var element, display
+    var element, display;
     if (!elementDisplay[nodeName]) {
-      element = document.createElement(nodeName)
-      document.body.appendChild(element)
-      display = getComputedStyle(element, '').getPropertyValue("display")
-      element.parentNode.removeChild(element)
-      display == "none" && (display = "block")
-      elementDisplay[nodeName] = display
+      element = document.createElement(nodeName);
+      document.body.appendChild(element);
+      display = getComputedStyle(element, '').getPropertyValue("display");
+      element.parentNode.removeChild(element);
+      display == "none" && (display = "block");//为none时设置成block
+      elementDisplay[nodeName] = display;
     }
-    return elementDisplay[nodeName]
+    return elementDisplay[nodeName];
   }
 
+  //得到元素的子节点数组，不包含文本节点
   function children(element) {
     return 'children' in element ?
       slice.call(element.children) :
-      $.map(element.childNodes, function(node){ if (node.nodeType == 1) return node })
+      $.map(element.childNodes, function(node){
+        if (node.nodeType == 1) {
+          return node;
+        }
+      });
   }
 
+  //设置zepto实例对象,构造函数
   function Z(dom, selector) {
-    var i, len = dom ? dom.length : 0
-    for (i = 0; i < len; i++) this[i] = dom[i]
-    this.length = len
-    this.selector = selector || ''
+    var i, len = dom ? dom.length : 0;
+    for (i = 0; i < len; i++) {
+      this[i] = dom[i];
+    }
+    this.length = len;
+    this.selector = selector || '';
   }
 
   // `$.zepto.fragment` takes a html string and an optional tag name
@@ -185,162 +210,222 @@ var Zepto = (function() {
   // This function can be overriden in plugins for example to make
   // it compatible with browsers that don't support the DOM fully.
   zepto.fragment = function(html, name, properties) {
-    var dom, nodes, container
+    var dom, nodes, container;
 
     // A special case optimization for a single tag
-    if (singleTagRE.test(html)) dom = $(document.createElement(RegExp.$1))
+    //单标签正则<div> <div/> <div></div>，直接创建dom即可
+    if (singleTagRE.test(html)) {
+      dom = $(document.createElement(RegExp.$1));
+    }
 
+    //非空标签
     if (!dom) {
-      if (html.replace) html = html.replace(tagExpanderRE, "<$1></$2>")
-      if (name === undefined) name = fragmentRE.test(html) && RegExp.$1
-      if (!(name in containers)) name = '*'
+      //把不应该单闭合的标签改成对应的双标签
+      if (html.replace) {
+        html = html.replace(tagExpanderRE, "<$1></$2>");
+      }
+      //得到标签名
+      if (name === undefined) {
+        name = fragmentRE.test(html) && RegExp.$1;
+      }
+      if (!(name in containers)) {
+        name = '*';
+      }
 
-      container = containers[name]
-      container.innerHTML = '' + html
+      container = containers[name];
+      container.innerHTML = '' + html;
+      //取出容器的子节点，并且清空container
       dom = $.each(slice.call(container.childNodes), function(){
-        container.removeChild(this)
+        container.removeChild(this);
       })
     }
 
+    //加上属性或者其他
     if (isPlainObject(properties)) {
-      nodes = $(dom)
+      nodes = $(dom);
       $.each(properties, function(key, value) {
-        if (methodAttributes.indexOf(key) > -1) nodes[key](value)
-        else nodes.attr(key, value)
-      })
+        if (methodAttributes.indexOf(key) > -1) {
+          nodes[key](value);
+        }
+        else {
+          nodes.attr(key, value)
+        }
+      });
     }
 
-    return dom
-  }
+    return dom;//原生dom对象数组
+  };
 
   // `$.zepto.Z` swaps out the prototype of the given `dom` array
   // of nodes with `$.fn` and thus supplying all the Zepto functions
   // to the array. This method can be overriden in plugins.
   zepto.Z = function(dom, selector) {
-    return new Z(dom, selector)
-  }
+    return new Z(dom, selector);
+  };
 
   // `$.zepto.isZ` should return `true` if the given object is a Zepto
   // collection. This method can be overriden in plugins.
   zepto.isZ = function(object) {
-    return object instanceof zepto.Z
-  }
+    return object instanceof zepto.Z;
+  };
 
   // `$.zepto.init` is Zepto's counterpart to jQuery's `$.fn.init` and
   // takes a CSS selector and an optional context (and handles various
   // special cases).
   // This method can be overriden in plugins.
   zepto.init = function(selector, context) {
-    var dom
+    var dom;
     // If nothing given, return an empty Zepto collection
-    if (!selector) return zepto.Z()
+    if (!selector) {
+      return zepto.Z();
+    }
     // Optimize for string selectors
     else if (typeof selector == 'string') {
-      selector = selector.trim()
+      selector = selector.trim();
       // If it's a html fragment, create nodes from it
       // Note: In both Chrome 21 and Firefox 15, DOM error 12
       // is thrown if the fragment doesn't begin with <
-      if (selector[0] == '<' && fragmentRE.test(selector))
-        dom = zepto.fragment(selector, RegExp.$1, context), selector = null
+      //创建节点
+      if (selector[0] == '<' && fragmentRE.test(selector)) {
+        dom = zepto.fragment(selector, RegExp.$1, context);
+        selector = null;
+      }
       // If there's a context, create a collection on that context first, and select
       // nodes from there
-      else if (context !== undefined) return $(context).find(selector)
+      else if (context !== undefined) {
+        return $(context).find(selector);
+      }
       // If it's a CSS selector, use it to select nodes.
-      else dom = zepto.qsa(document, selector)
+      else {
+        dom = zepto.qsa(document, selector);
+      }
     }
     // If a function is given, call it when the DOM is ready
-    else if (isFunction(selector)) return $(document).ready(selector)
+    else if (isFunction(selector)) {
+      return $(document).ready(selector);
+    }
     // If a Zepto collection is given, just return it
-    else if (zepto.isZ(selector)) return selector
+    else if (zepto.isZ(selector)) {
+      return selector;
+    }
     else {
       // normalize array if an array of nodes is given
-      if (isArray(selector)) dom = compact(selector)
+      if (isArray(selector)) {
+        dom = compact(selector);//去除空值
+      }
       // Wrap DOM nodes.
-      else if (isObject(selector))
-        dom = [selector], selector = null
+      else if (isObject(selector)) {
+        dom = [selector];
+        selector = null;
+      }
+
       // If it's a html fragment, create nodes from it
-      else if (fragmentRE.test(selector))
-        dom = zepto.fragment(selector.trim(), RegExp.$1, context), selector = null
+      //不明白为什么还要再判一次，非字符串
+      else if (fragmentRE.test(selector)) {
+        dom = zepto.fragment(selector.trim(), RegExp.$1, context);
+        selector = null;
+      }
       // If there's a context, create a collection on that context first, and select
       // nodes from there
-      else if (context !== undefined) return $(context).find(selector)
+      else if (context !== undefined) {
+        return $(context).find(selector);
+      }
       // And last but no least, if it's a CSS selector, use it to select nodes.
-      else dom = zepto.qsa(document, selector)
+      else {
+        dom = zepto.qsa(document, selector);
+      }
     }
     // create a new Zepto collection from the nodes found
-    return zepto.Z(dom, selector)
-  }
+    return zepto.Z(dom, selector);
+  };
 
   // `$` will be the base `Zepto` object. When calling this
   // function just call `$.zepto.init, which makes the implementation
   // details of selecting nodes and creating Zepto collections
   // patchable in plugins.
   $ = function(selector, context){
-    return zepto.init(selector, context)
-  }
+    return zepto.init(selector, context);
+  };
 
+  //扩展，deep表示是否深度扩展
   function extend(target, source, deep) {
-    for (key in source)
+    for (key in source) {
       if (deep && (isPlainObject(source[key]) || isArray(source[key]))) {
-        if (isPlainObject(source[key]) && !isPlainObject(target[key]))
-          target[key] = {}
-        if (isArray(source[key]) && !isArray(target[key]))
-          target[key] = []
-        extend(target[key], source[key], deep)
+        if (isPlainObject(source[key]) && !isPlainObject(target[key])) {
+          target[key] = {};
+        }
+        if (isArray(source[key]) && !isArray(target[key])) {
+          target[key] = [];
+        }
+        extend(target[key], source[key], deep);
       }
-      else if (source[key] !== undefined) target[key] = source[key]
+      //不会扩展显示置为undefined的属性
+      else if (source[key] !== undefined) {
+        target[key] = source[key];
+      }
+    }
   }
 
   // Copy all but undefined properties from one or more
   // objects to the `target` object.
   $.extend = function(target){
-    var deep, args = slice.call(arguments, 1)
+    var deep, args = slice.call(arguments, 1);
     if (typeof target == 'boolean') {
-      deep = target
-      target = args.shift()
+      deep = target;
+      target = args.shift();
     }
-    args.forEach(function(arg){ extend(target, arg, deep) })
-    return target
-  }
+    args.forEach(function(arg){
+      extend(target, arg, deep);
+    });
+    return target;
+  };
 
   // `$.zepto.qsa` is Zepto's CSS selector implementation which
   // uses `document.querySelectorAll` and optimizes for some special cases, like `#id`.
   // This method can be overriden in plugins.
   zepto.qsa = function(element, selector){
     var found,
-        maybeID = selector[0] == '#',
-        maybeClass = !maybeID && selector[0] == '.',
+        maybeID = selector[0] == '#',//id的情况
+        maybeClass = !maybeID && selector[0] == '.',//class的情况
         nameOnly = maybeID || maybeClass ? selector.slice(1) : selector, // Ensure that a 1 char tag name still gets checked
-        isSimple = simpleSelectorRE.test(nameOnly)
+        isSimple = simpleSelectorRE.test(nameOnly);
     return (element.getElementById && isSimple && maybeID) ? // Safari DocumentFragment doesn't have getElementById
       ( (found = element.getElementById(nameOnly)) ? [found] : [] ) :
-      (element.nodeType !== 1 && element.nodeType !== 9 && element.nodeType !== 11) ? [] :
+      (element.nodeType !== 1 && element.nodeType !== 9 && element.nodeType !== 11) ? [] ://1：元素，9：document，11：片段fragment
       slice.call(
         isSimple && !maybeID && element.getElementsByClassName ? // DocumentFragment doesn't have getElementsByClassName/TagName
           maybeClass ? element.getElementsByClassName(nameOnly) : // If it's simple, it could be a class
           element.getElementsByTagName(selector) : // Or a tag
           element.querySelectorAll(selector) // Or it's not simple, and we need to query all
-      )
-  }
+      );
+  };
 
+  //过滤
   function filtered(nodes, selector) {
-    return selector == null ? $(nodes) : $(nodes).filter(selector)
+    return selector == null ? $(nodes) : $(nodes).filter(selector);
   }
 
+  //判断parent是否包含node
   $.contains = document.documentElement.contains ?
     function(parent, node) {
-      return parent !== node && parent.contains(node)
+      return parent !== node && parent.contains(node);
     } :
     function(parent, node) {
-      while (node && (node = node.parentNode))
-        if (node === parent) return true
-      return false
-    }
+      while (node && (node = node.parentNode)) {
+        if (node === parent) {
+          return true;
+        }
+      }
+      return false;
+    };
 
+  //这个函数在整个库中取着很得要的作用，处理arg为函数或者值的情况
+  //下面很多设置元素属性时的函数都有用到
   function funcArg(context, arg, idx, payload) {
-    return isFunction(arg) ? arg.call(context, idx, payload) : arg
+    return isFunction(arg) ? arg.call(context, idx, payload) : arg;
   }
 
+  //如果设置的值为null或undefined,则相当于删除该属性，否则设置name属性为value
   function setAttribute(node, name, value) {
     value == null ? node.removeAttribute(name) : node.setAttribute(name, value)
   }
@@ -348,9 +433,11 @@ var Zepto = (function() {
   // access className property while respecting SVGAnimatedString
   function className(node, value){
     var klass = node.className || '',
-        svg   = klass && klass.baseVal !== undefined
+        svg   = klass && klass.baseVal !== undefined;
 
-    if (value === undefined) return svg ? klass.baseVal : klass
+    if (value === undefined) {
+      return svg ? klass.baseVal : klass;
+    }
     svg ? (klass.baseVal = value) : (node.className = value)
   }
 
@@ -371,77 +458,96 @@ var Zepto = (function() {
           +value + "" == value ? +value :
           /^[\[\{]/.test(value) ? $.parseJSON(value) :
           value )
-        : value
+        : value;
     } catch(e) {
-      return value
+      return value;
     }
   }
 
-  $.type = type
-  $.isFunction = isFunction
-  $.isWindow = isWindow
-  $.isArray = isArray
-  $.isPlainObject = isPlainObject
+  $.type = type;
+  $.isFunction = isFunction;
+  $.isWindow = isWindow;
+  $.isArray = isArray;
+  $.isPlainObject = isPlainObject;
 
+  //空对象
   $.isEmptyObject = function(obj) {
-    var name
-    for (name in obj) return false
-    return true
-  }
+    var name;
+    for (name in obj) {
+      return false;
+    }
+    return true;
+  };
 
+  //call是一个一个传参
+  //apply是给个伪数组
   $.inArray = function(elem, array, i){
-    return emptyArray.indexOf.call(array, elem, i)
-  }
+    return emptyArray.indexOf.call(array, elem, i);
+  };
 
-  $.camelCase = camelize
+  $.camelCase = camelize;
   $.trim = function(str) {
-    return str == null ? "" : String.prototype.trim.call(str)
-  }
+    return str == null ? "" : String.prototype.trim.call(str);
+  };
 
   // plugin compatibility
-  $.uuid = 0
-  $.support = { }
-  $.expr = { }
-  $.noop = function() {}
+  $.uuid = 0;
+  $.support = { };
+  $.expr = { };
+  $.noop = function() {};
 
   $.map = function(elements, callback){
-    var value, values = [], i, key
-    if (likeArray(elements))
-      for (i = 0; i < elements.length; i++) {
-        value = callback(elements[i], i)
-        if (value != null) values.push(value)
-      }
-    else
-      for (key in elements) {
-        value = callback(elements[key], key)
-        if (value != null) values.push(value)
-      }
-    return flatten(values)
-  }
-
-  $.each = function(elements, callback){
-    var i, key
+    var value, values = [], i, key;
     if (likeArray(elements)) {
-      for (i = 0; i < elements.length; i++)
-        if (callback.call(elements[i], i, elements[i]) === false) return elements
+      for (i = 0; i < elements.length; i++) {
+        value = callback(elements[i], i);
+        if (value != null) {
+          values.push(value);
+        }
+      }
+    }
+    else {
+      for (key in elements) {
+        value = callback(elements[key], key);
+        if (value != null) {
+          values.push(value);
+        }
+      }
+    }
+    return flatten(values);
+  };
+
+  //callback为false就直接终止each
+  $.each = function(elements, callback){
+    var i, key;
+    if (likeArray(elements)) {
+      for (i = 0; i < elements.length; i++) {
+        if (callback.call(elements[i], i, elements[i]) === false) {
+          return elements;
+        }
+      }
     } else {
       for (key in elements)
-        if (callback.call(elements[key], key, elements[key]) === false) return elements
+        if (callback.call(elements[key], key, elements[key]) === false) {
+          return elements;
+        }
     }
 
-    return elements
-  }
+    return elements;
+  };
 
   $.grep = function(elements, callback){
-    return filter.call(elements, callback)
-  }
+    return filter.call(elements, callback);
+  };
 
-  if (window.JSON) $.parseJSON = JSON.parse
+  if (window.JSON) {
+    $.parseJSON = JSON.parse;
+  }
 
   // Populate the class2type map
   $.each("Boolean Number String Function Array Date RegExp Object Error".split(" "), function(i, name) {
-    class2type[ "[object " + name + "]" ] = name.toLowerCase()
-  })
+    class2type[ "[object " + name + "]" ] = name.toLowerCase();
+  });
 
   // Define methods that will be available on all
   // Zepto collections
@@ -458,10 +564,10 @@ var Zepto = (function() {
     splice: emptyArray.splice,
     indexOf: emptyArray.indexOf,
     concat: function(){
-      var i, value, args = []
+      var i, value, args = [];
       for (i = 0; i < arguments.length; i++) {
-        value = arguments[i]
-        args[i] = zepto.isZ(value) ? value.toArray() : value
+        value = arguments[i];
+        args[i] = zepto.isZ(value) ? value.toArray() : value;
       }
       return concat.apply(zepto.isZ(this) ? this.toArray() : this, args)
     },
