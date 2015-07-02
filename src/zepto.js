@@ -343,6 +343,7 @@ var Zepto = (function() {
   // function just call `$.zepto.init, which makes the implementation
   // details of selecting nodes and creating Zepto collections
   // patchable in plugins.
+  // $本身是个函数，带了一堆函数属性，还有个fn属性，是个对象
   $ = function(selector, context){
     return zepto.init(selector, context);
   };
@@ -563,165 +564,275 @@ var Zepto = (function() {
     sort: emptyArray.sort,
     splice: emptyArray.splice,
     indexOf: emptyArray.indexOf,
-    //将参数
+    //将参数全部添加到当前zepto对象
     concat: function(){
       var i, value, args = [];
       for (i = 0; i < arguments.length; i++) {
         value = arguments[i];
         args[i] = zepto.isZ(value) ? value.toArray() : value;
       }
-      return concat.apply(zepto.isZ(this) ? this.toArray() : this, args)
+      return concat.apply(zepto.isZ(this) ? this.toArray() : this, args);
     },
 
     // `map` and `slice` in the jQuery API work differently
     // from their array counterparts
     map: function(fn){
-      return $($.map(this, function(el, i){ return fn.call(el, i, el) }))
+      return $($.map(this, function(el, i){
+        return fn.call(el, i, el);
+      }));
     },
     slice: function(){
-      return $(slice.apply(this, arguments))
+      return $(slice.apply(this, arguments));
     },
-
+    //ready触发
     ready: function(callback){
       // need to check if document.body exists for IE as that browser reports
       // document ready when it hasn't yet created the body element
-      if (readyRE.test(document.readyState) && document.body) callback($)
-      else document.addEventListener('DOMContentLoaded', function(){ callback($) }, false)
+      if (readyRE.test(document.readyState) && document.body) {
+        callback($);
+      }
+      else {
+        document.addEventListener('DOMContentLoaded', function(){
+          callback($);
+        }, false);
+      }
       return this
     },
+    //无参数转成数组返回，返回的是原生DOM
+    //取集合中对应指定索引的值，如果idx小于0,则idx等于idx+length,length为集合的长度
     get: function(idx){
-      return idx === undefined ? slice.call(this) : this[idx >= 0 ? idx : idx + this.length]
+      return idx === undefined ? slice.call(this) : this[idx >= 0 ? idx : idx + this.length];
     },
-    toArray: function(){ return this.get() },
+    //将集合转换为数组
+    //直接调用get
+    toArray: function(){
+      return this.get();
+    },
+    //获取集合长度
     size: function(){
-      return this.length
+      return this.length;
     },
+    //调用each，无返回
+    //将集合从dom中删除
     remove: function(){
       return this.each(function(){
         if (this.parentNode != null)
-          this.parentNode.removeChild(this)
-      })
+          this.parentNode.removeChild(this);
+      });
     },
+    //使用数组的every
+    //遍历集合，将集合中的每一项放入callback中进行处理，去掉结果为false的项，注意这里的callback如果明确返回false
+    //那么就会停止循环了
     each: function(callback){
       emptyArray.every.call(this, function(el, idx){
-        return callback.call(el, idx, el) !== false
-      })
-      return this
+        return callback.call(el, idx, el) !== false;
+      });
+      return this;
     },
+    //过滤集合，返回处理结果为true的记录
     filter: function(selector){
-      if (isFunction(selector)) return this.not(this.not(selector))
-      return $(filter.call(this, function(element){
-        return zepto.matches(element, selector)
-      }))
-    },
-    add: function(selector,context){
-      return $(uniq(this.concat($(selector,context))))
-    },
-    is: function(selector){
-      return this.length > 0 && zepto.matches(this[0], selector)
-    },
-    not: function(selector){
-      var nodes=[]
-      if (isFunction(selector) && selector.call !== undefined)
-        this.each(function(idx){
-          if (!selector.call(this,idx)) nodes.push(this)
-        })
-      else {
-        var excludes = typeof selector == 'string' ? this.filter(selector) :
-          (likeArray(selector) && isFunction(selector.item)) ? slice.call(selector) : $(selector)
-        this.forEach(function(el){
-          if (excludes.indexOf(el) < 0) nodes.push(el)
-        })
+      if (isFunction(selector)) {
+        //this.not(selector)取到需要排除的集合，第二次再取反(这个时候this.not的参数就是一个集合了)，得到想要的集合
+        return this.not(this.not(selector));//双重not，内层not返回dom数组
       }
-      return $(nodes)
+      //$的参数是数组
+      //filter收集返回结果为true的记录
+      return $(filter.call(this, function(element){
+        return zepto.matches(element, selector);
+      }));
     },
+    //添加元素
+    //将由selector获取到的结果追加到当前集合中
+    add: function(selector,context){
+      return $(uniq(this.concat($(selector,context))));
+    },
+    //使用match，但是只使用第一个dom
+    //返回集合中的第1条记录是否与selector匹配
+    is: function(selector){
+      return this.length > 0 && zepto.matches(this[0], selector);
+    },
+    //排除集合里满足条件的记录，接收参数为：css选择器，function, dom ,nodeList
+    not: function(selector){
+      var nodes=[];
+      //当selector为函数时，safari下的typeof NodeList也是function，所以这里需要再加一个判断selector.call !== undefined
+      if (isFunction(selector) && selector.call !== undefined) {
+        //注意这里收集的是selector.call(this,idx)返回结果为false的时候记录
+        this.each(function(idx){
+          if (!selector.call(this,idx)) {
+            nodes.push(this);
+          }
+        });
+      } else {
+        //当selector为字符串的时候，对集合进行筛选，也就是筛选出集合中满足selector的记录
+        var excludes = typeof selector == 'string' ? this.filter(selector) :
+          //当selector为nodeList时执行slice.call(selector),注意这里的isFunction(selector.item)是为了排除selector为数组的情况
+          //当selector为css选择器，执行$(selector)
+          (likeArray(selector) && isFunction(selector.item)) ? slice.call(selector) : $(selector);
+        this.forEach(function(el){
+          if (excludes.indexOf(el) < 0) {
+            //筛选出不在excludes集合里的记录，达到排除的目的
+            nodes.push(el);
+          }
+        });
+      }
+      return $(nodes);//由于上面得到的结果是数组，这里需要转成zepto对象，以便继承其它方法，实现链写
+    },
+    //是否含有子元素
+    /*
+     接收node和string作为参数，给当前集合筛选出包含selector的集合
+     isObject(selector)是判断参数是否是node，因为typeof node == 'object'
+     当参数为node时，只需要判读当前记当里是否包含node节点即可
+     当参数为string时，则在当前记录里查询selector，如果长度为0，则为false，filter函数就会过滤掉这条记录，否则保存该记录
+    */
     has: function(selector){
       return this.filter(function(){
         return isObject(selector) ?
           $.contains(this, selector) :
-          $(this).find(selector).size()
-      })
+          $(this).find(selector).size();
+      });
     },
+    //选择集合中指定索引的记录，当idx为-1时，取最后一个记录
     eq: function(idx){
-      return idx === -1 ? this.slice(idx) : this.slice(idx, + idx + 1)
+      return idx === -1 ? this.slice(idx) : this.slice(idx, + idx + 1);
     },
+    //取集合中的第一条记录
+    //如果集合中的第一条数据本身就已经是zepto对象则直接返回本身，否则转成zepto对象
+    //el && !isObject(el)在这里取到一个判断el是否为节点的情况，因为如果el是节点，那么isObject(el)的结果就是true
     first: function(){
-      var el = this[0]
-      return el && !isObject(el) ? el : $(el)
+      var el = this[0];
+      return el && !isObject(el) ? el : $(el);
     },
+    //取集合中的最后一条记录
+    //如果el为node,则isObject(el)会为true,需要转成zepto对象
     last: function(){
-      var el = this[this.length - 1]
-      return el && !isObject(el) ? el : $(el)
+      var el = this[this.length - 1];
+      return el && !isObject(el) ? el : $(el);
     },
+    //在当前集合中查找selector，selector可以是集合，选择器，以及节点
     find: function(selector){
-      var result, $this = this
-      if (!selector) result = $()
-      else if (typeof selector == 'object')
+      var result, $this = this;
+      if (!selector) {
+        result = $();
+      }
+      //如果selector为node或者zepto集合时
+      //遍历selector，筛选出父级为集合中记录的selector
+      else if (typeof selector == 'object') {
         result = $(selector).filter(function(){
-          var node = this
+          var node = this;
+          //如果$.contains(parent, node)返回true，则emptyArray.some也会返回true,外层的filter则会收录该条记录
           return emptyArray.some.call($this, function(parent){
-            return $.contains(parent, node)
+            return $.contains(parent, node);
           })
-        })
-      else if (this.length == 1) result = $(zepto.qsa(this[0], selector))
-      else result = this.map(function(){ return zepto.qsa(this, selector) })
-      return result
+        });
+      }
+      //如果selector是css选择器
+      //如果当前集合长度为1时，调用zepto.qsa，将结果转成zepto对象
+      else if (this.length == 1) {
+        result = $(zepto.qsa(this[0], selector));
+      }
+      //如果长度大于1，则调用map遍历
+      else {
+        result = this.map(function(){
+          return zepto.qsa(this, selector);
+        });
+      }
+      return result;
     },
+    //取集合中第一个dom的最近的满足条件的父级元素
     closest: function(selector, context){
-      var node = this[0], collection = false
-      if (typeof selector == 'object') collection = $(selector)
-      while (node && !(collection ? collection.indexOf(node) >= 0 : zepto.matches(node, selector)))
-        node = node !== context && !isDocument(node) && node.parentNode
-      return $(node)
+      var node = this[0], collection = false;
+      if (typeof selector == 'object') {
+        collection = $(selector);
+      }
+      //当selector是node或者zepto集合时，如果node不在collection集合中时需要取node.parentNode进行判断
+      //当selector是字符串选择器时，如果node与selector不匹配，则需要取node.parentNode进行判断
+      while (node && !(collection ? collection.indexOf(node) >= 0 : zepto.matches(node, selector))) {
+        //当node 不是context,document的时候，取node.parentNode
+        node = node !== context && !isDocument(node) && node.parentNode;
+      }
+      return $(node);
     },
+    //取集合所有父级元素
     parents: function(selector){
-      var ancestors = [], nodes = this
-      while (nodes.length > 0)
+      var ancestors = [], nodes = this;
+      while (nodes.length > 0) {
+        //通过遍历nodes得到所有父级，注意在while里nodes被重新赋值了
+        //本函数的巧妙之处在于，不停在获取父级，再遍历父级获取父级的父级
+        //然后再通过去重，得到最终想要的结果，当到达最顶层的父级时，nodes.length就为0了
+        //nodes被重新赋值为收集到的父级集合
         nodes = $.map(nodes, function(node){
+          //遍历nodes，收集集合的第一层父级
+          //ancestors.indexOf(node) < 0用来去重复
           if ((node = node.parentNode) && !isDocument(node) && ancestors.indexOf(node) < 0) {
-            ancestors.push(node)
-            return node
+            ancestors.push(node);//收集已经获取到的父级元素，用于去重复
+            return node;
           }
-        })
-      return filtered(ancestors, selector)
+        });
+      }
+      //上面还只是取到了所有的父级元素，这里还需要对其进行筛选从而得到最终想要的结果
+      return filtered(ancestors, selector);
     },
+    //获取集合的父节点
     parent: function(selector){
-      return filtered(uniq(this.pluck('parentNode')), selector)
+      return filtered(uniq(this.pluck('parentNode')), selector);
     },
+    //获取集合的子节点
     children: function(selector){
-      return filtered(this.map(function(){ return children(this) }), selector)
+      return filtered(this.map(function(){
+        return children(this);
+      }), selector);
     },
+    //返回的还是zepto集合
     contents: function() {
-      return this.map(function() { return this.contentDocument || slice.call(this.childNodes) })
+      return this.map(function() {
+        return this.contentDocument || slice.call(this.childNodes);
+      });
     },
+    //先获取该节点的父节点中的所有子节点，再排除本身
     siblings: function(selector){
       return filtered(this.map(function(i, el){
-        return filter.call(children(el.parentNode), function(child){ return child!==el })
-      }), selector)
+        return filter.call(children(el.parentNode), function(child){
+          return child !== el;
+        });
+      }), selector);
     },
+
     empty: function(){
-      return this.each(function(){ this.innerHTML = '' })
+      return this.each(function(){
+        this.innerHTML = '';
+      });
     },
     // `pluck` is borrowed from Prototype.js
+    //根据属性来获取当前集合的相关集合
     pluck: function(property){
-      return $.map(this, function(el){ return el[property] })
+      return $.map(this, function(el){
+        return el[property];
+      });
     },
+
     show: function(){
       return this.each(function(){
-        this.style.display == "none" && (this.style.display = '')
-        if (getComputedStyle(this, '').getPropertyValue("display") == "none")
-          this.style.display = defaultDisplay(this.nodeName)
+        //清除元素的内联display="none"的样式
+        this.style.display == "none" && (this.style.display = '');
+        //当样式表里的该元素的display样式为none时，设置它的display为默认值
+        if (getComputedStyle(this, '').getPropertyValue("display") == "none") {
+          this.style.display = defaultDisplay(this.nodeName);
+        }
       })
     },
+    //将要替换的内容插入到被替换的内容前面，然后删除被替换的内容
     replaceWith: function(newContent){
-      return this.before(newContent).remove()
+      return this.before(newContent).remove();
     },
-    wrap: function(structure){
-      var func = isFunction(structure)
-      if (this[0] && !func)
-        var dom   = $(structure).get(0),
-            clone = dom.parentNode || this.length > 1
 
+    wrap: function(structure){
+      var func = isFunction(structure);
+      //如果structure是字符串，则将其转成DOM
+      if (this[0] && !func) {
+        var dom = $(structure).get(0),
+            clone = dom.parentNode || this.length > 1;
+      }
+      //如果structure是已经存在于页面上的节点或者被wrap的记录不只一条，则需要clone dom
       return this.each(function(index){
         $(this).wrapAll(
           func ? structure.call(this, index) :
@@ -730,48 +841,70 @@ var Zepto = (function() {
       })
     },
     wrapAll: function(structure){
+      //将要包裹的内容插入到第一条记录的前面，算是给structure定位位置
       if (this[0]) {
-        $(this[0]).before(structure = $(structure))
-        var children
+        $(this[0]).before(structure = $(structure));
+        var children;
         // drill down to the inmost element
-        while ((children = structure.children()).length) structure = children.first()
-        $(structure).append(this)
+        //取structure里的第一个子节点的最里层
+        while ((children = structure.children()).length) {
+          structure = children.first();
+        }
+        //将当前集合插入到最里层的节点里，达到wrapAll的目的
+        $(structure).append(this);
       }
-      return this
+      return this;
     },
+    //在匹配元素里的内容外包一层结构
     wrapInner: function(structure){
-      var func = isFunction(structure)
+      var func = isFunction(structure);
       return this.each(function(index){
+        //原理就是获取节点的内容，然后用structure将内容包起来，如果内容不存在，则直接将structure append到该节点
         var self = $(this), contents = self.contents(),
-            dom  = func ? structure.call(this, index) : structure
-        contents.length ? contents.wrapAll(dom) : self.append(dom)
+            dom  = func ? structure.call(this, index) : structure;
+        contents.length ? contents.wrapAll(dom) : self.append(dom);
       })
     },
+    //用子元素替换掉父级，父元素节点删除
     unwrap: function(){
       this.parent().each(function(){
-        $(this).replaceWith($(this).children())
-      })
-      return this
+        $(this).replaceWith($(this).children());
+      });
+      return this;
     },
+    //复制节点
     clone: function(){
-      return this.map(function(){ return this.cloneNode(true) })
+      return this.map(function(){
+        return this.cloneNode(true);
+      });
     },
+    //隐藏集合
     hide: function(){
-      return this.css("display", "none")
+      return this.css("display", "none");
     },
+    //这个setting取得作用就是控制显示与隐藏，并不切换，当它的值为true时，一直显示，false时，一直隐藏
+    //这个地方的判断看上去有点绕，其实也简单，意思是说，当不给toggle参数时，根据元素的display是否等于none来决定显示或者隐藏元素
+    //当给toggle参数，就没有切换效果了，只是简单的根据参数值来决定显示或隐藏。如果参数true,相当于show方法，false则相当于hide方法
     toggle: function(setting){
       return this.each(function(){
-        var el = $(this)
-        ;(setting === undefined ? el.css("display") == "none" : setting) ? el.show() : el.hide()
+        var el = $(this);
+        (setting === undefined ? el.css("display") == "none" : setting) ? el.show() : el.hide();
       })
     },
-    prev: function(selector){ return $(this.pluck('previousElementSibling')).filter(selector || '*') },
-    next: function(selector){ return $(this.pluck('nextElementSibling')).filter(selector || '*') },
+    prev: function(selector){
+      return $(this.pluck('previousElementSibling')).filter(selector || '*');
+    },
+    next: function(selector){
+      return $(this.pluck('nextElementSibling')).filter(selector || '*');
+    },
+    //当有参数时，设置集合每条记录的HTML，没有参数时，则为获取集合第一条记录的HTML，如果集合的长度为0,则返回null
     html: function(html){
+      //参数html不存在时，获取集合中第一条记录的html
+      //否则遍历集合，设置每条记录的html
       return 0 in arguments ?
         this.each(function(idx){
-          var originHtml = this.innerHTML
-          $(this).empty().append( funcArg(this, html, idx, originHtml) )
+          var originHtml = this.innerHTML;
+          $(this).empty().append( funcArg(this, html, idx, originHtml) );
         }) :
         (0 in this ? this[0].innerHTML : null)
     },
@@ -978,7 +1111,7 @@ var Zepto = (function() {
   }
 
   // for now
-  $.fn.detach = $.fn.remove
+  $.fn.detach = $.fn.remove;
 
   // Generate the `width` and `height` functions
   ;['width', 'height'].forEach(function(dimension){
@@ -1006,12 +1139,12 @@ var Zepto = (function() {
   // Generate the `after`, `prepend`, `before`, `append`,
   // `insertAfter`, `insertBefore`, `appendTo`, and `prependTo` methods.
   adjacencyOperators.forEach(function(operator, operatorIndex) {
-    var inside = operatorIndex % 2 //=> prepend, append
+    var inside = operatorIndex % 2; //=> prepend, append
 
     $.fn[operator] = function(){
       // arguments can be nodes, arrays of nodes, Zepto objects and HTML strings
       var argType, nodes = $.map(arguments, function(arg) {
-            argType = type(arg)
+            argType = type(arg);
             return argType == "object" || argType == "array" || arg == null ?
               arg : zepto.fragment(arg)
           }),
@@ -1053,14 +1186,14 @@ var Zepto = (function() {
     }
   })
 
-  zepto.Z.prototype = Z.prototype = $.fn
+  zepto.Z.prototype = Z.prototype = $.fn;
 
   // Export internal API functions in the `$.zepto` namespace
-  zepto.uniq = uniq
-  zepto.deserializeValue = deserializeValue
-  $.zepto = zepto
+  zepto.uniq = uniq;
+  zepto.deserializeValue = deserializeValue;
+  $.zepto = zepto;
 
-  return $
+  return $;
 })();
 
 // If `$` is not yet defined, point it to `Zepto`
