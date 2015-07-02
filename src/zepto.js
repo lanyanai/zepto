@@ -563,6 +563,7 @@ var Zepto = (function() {
     sort: emptyArray.sort,
     splice: emptyArray.splice,
     indexOf: emptyArray.indexOf,
+    //½«²ÎÊý
     concat: function(){
       var i, value, args = [];
       for (i = 0; i < arguments.length; i++) {
