@@ -2,46 +2,73 @@
 //     (c) 2010-2015 Thomas Fuchs
 //     Zepto.js may be freely distributed under the MIT license.
 
+//事件处理部分
 ;(function($){
   var _zid = 1, undefined,
       slice = Array.prototype.slice,
       isFunction = $.isFunction,
-      isString = function(obj){ return typeof obj == 'string' },
+      isString = function(obj) {
+        return typeof obj == 'string';
+      },
       handlers = {},
       specialEvents={},
       focusinSupported = 'onfocusin' in window,
-      focus = { focus: 'focusin', blur: 'focusout' },
-      hover = { mouseenter: 'mouseover', mouseleave: 'mouseout' }
+      focus = {
+        focus: 'focusin',
+        blur: 'focusout'
+      },
+      hover = {
+        mouseenter: 'mouseover',
+        mouseleave: 'mouseout'
+      };
 
-  specialEvents.click = specialEvents.mousedown = specialEvents.mouseup = specialEvents.mousemove = 'MouseEvents'
+  specialEvents.click = specialEvents.mousedown = specialEvents.mouseup = specialEvents.mousemove = 'MouseEvents';
 
+  //取element的唯一标示符，如果没有，则设置一个并返回
   function zid(element) {
-    return element._zid || (element._zid = _zid++)
+    return element._zid || (element._zid = _zid++);
   }
+
+  //查找绑定在元素上的指定类型的事件处理函数集合
   function findHandlers(element, event, fn, selector) {
-    event = parse(event)
-    if (event.ns) var matcher = matcherFor(event.ns)
+    event = parse(event);
+    if (event.ns) {
+      var matcher = matcherFor(event.ns);//正则
+    }
     return (handlers[zid(element)] || []).filter(function(handler) {
+
       return handler
-        && (!event.e  || handler.e == event.e)
+        && (!event.e  || handler.e == event.e)  //判断事件类型是否相同
         && (!event.ns || matcher.test(handler.ns))
-        && (!fn       || zid(handler.fn) === zid(fn))
-        && (!selector || handler.sel == selector)
+        && (!fn || zid(handler.fn) === zid(fn))
+        //注意函数是引用类型的数据zid(handler.fn)的作用是返回handler.fn的标示符，如果没有，则给它添加一个，
+        //这样如果fn和handler.fn引用的是同一个函数，那么fn上应该也可相同的标示符，
+        //这里就是通过这一点来判断两个变量是否引用的同一个函数
+        && (!selector || handler.sel == selector);
     })
   }
+
+  //解析事件类型，返回一个包含事件名称和事件命名空间的对象
   function parse(event) {
-    var parts = ('' + event).split('.')
-    return {e: parts[0], ns: parts.slice(1).sort().join(' ')}
-  }
-  function matcherFor(ns) {
-    return new RegExp('(?:^| )' + ns.replace(' ', ' .* ?') + '(?: |$)')
+    var parts = ('' + event).split('.');
+    return {
+      e: parts[0],
+      ns: parts.slice(1).sort().join(' ')
+    };
   }
 
+  //生成命名空间的正则
+  function matcherFor(ns) {
+    return new RegExp('(?:^| )' + ns.replace(' ', ' .* ?') + '(?: |$)');
+  }
+
+  //捕获事件
   function eventCapture(handler, captureSetting) {
     return handler.del &&
       (!focusinSupported && (handler.e in focus)) ||
-      !!captureSetting
+      !!captureSetting;
   }
+
 
   function realEvent(type) {
     return hover[type] || (focusinSupported && focus[type]) || type
@@ -204,6 +231,7 @@
       add(element, event, callback, data, selector, delegator || autoRemove)
     })
   }
+
   $.fn.off = function(event, selector, callback){
     var $this = this
     if (event && !isString(event)) {
@@ -270,4 +298,4 @@
     return compatible(event)
   }
 
-})(Zepto)
+})(Zepto);
