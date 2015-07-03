@@ -2,7 +2,7 @@
 //     (c) 2010-2015 Thomas Fuchs
 //     Zepto.js may be freely distributed under the MIT license.
 
-//¿Í»§¶Ë¼ì²â
+//å®¢æˆ·ç«¯æ£€æµ‹
 ;(function($){
   function detect(ua, platform){
     var os = this.os = {}, browser = this.browser = {},

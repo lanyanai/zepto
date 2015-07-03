@@ -3,7 +3,7 @@
 //     Zepto.js may be freely distributed under the MIT license.
 
 ;(function(undefined){
-  //²¹È«StringµÄtrimº¯Êý
+  //è¡¥å…¨Stringçš„trimå‡½æ•°
   if (String.prototype.trim === undefined) // fix for iOS 3.2
     String.prototype.trim = function(){
       return this.replace(/^\s+|\s+$/g, '');
@@ -11,25 +11,25 @@
 
   // For iOS 3.x
   // from https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/reduce
-  //²¹È«ArrayµÄreduceº¯Êý
+  //è¡¥å…¨Arrayçš„reduceå‡½æ•°
   if (Array.prototype.reduce === undefined)
     Array.prototype.reduce = function(fun){
       if(this === void 0 || this === null) {
         throw new TypeError();
       }
       var t = Object(this),
-          len = t.length >>> 0,//ÀàÐÍ×ª»»£¬³ÉÎÞ·ûºÅ
+          len = t.length >>> 0,//ç±»åž‹è½¬æ¢ï¼Œæˆæ— ç¬¦å·
           k = 0,
           accumulator;
       if(typeof fun != 'function') {
         throw new TypeError();
       }
-      //Êý×é³¤¶ÈÎª0Ê±ÇÒÎÞµÚ¶þ¸ö²ÎÊý£¬Å×³öÒì³£
+      //æ•°ç»„é•¿åº¦ä¸º0æ—¶ä¸”æ— ç¬¬äºŒä¸ªå‚æ•°ï¼ŒæŠ›å‡ºå¼‚å¸¸
       if(len == 0 && arguments.length == 1) {
         throw new TypeError();
       }
 
-      //»ñÈ¡³õÊ¼Öµ
+      //èŽ·å–åˆå§‹å€¼
       if(arguments.length >= 2) {
         accumulator = arguments[1];
       }
@@ -45,7 +45,7 @@
         } while (true);
       }
 
-      //ÀÛ¼Ó¹ý³Ì
+      //ç´¯åŠ è¿‡ç¨‹
       while (k < len){
         if(k in t) {
           accumulator = fun.call(undefined, accumulator, t[k], k, t);

@@ -14,37 +14,37 @@ var Zepto = (function() {
       document = window.document,
       elementDisplay = {}, classCache = {},
 
-      //css¿É²»¼Óµ¥Î»µÄÊôĞÔ
+      //csså¯ä¸åŠ å•ä½çš„å±æ€§
       cssNumber = { 'column-count': 1, 'columns': 1, 'font-weight': 1, 'line-height': 1,'opacity': 1, 'z-index': 1, 'zoom': 1 },
 
-      //HTML´úÂëÆ¬¶ÏµÄÕıÔò<div> <!--->
+      //HTMLä»£ç ç‰‡æ–­çš„æ­£åˆ™<div> <!--->
       fragmentRE = /^\s*<(\w+|!)[^>]*>/,
-      //µ¥±êÇ©ÕıÔò<div> <div/> <div></div>
+      //å•æ ‡ç­¾æ­£åˆ™<div> <div/> <div></div>
       singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
-      //Æ¥Åä²»Ó¦¸Ãµ¥±ÕºÏµÄ±êÇ©£¬ÀàËÆ½«<div></div>Ğ´³ÉÁË<div/>
+      //åŒ¹é…ä¸åº”è¯¥å•é—­åˆçš„æ ‡ç­¾ï¼Œç±»ä¼¼å°†<div></div>å†™æˆäº†<div/>
       tagExpanderRE = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig,
-      //Æ¥Åä¸ù±êÇ©
+      //åŒ¹é…æ ¹æ ‡ç­¾
       rootNodeRE = /^(?:body|html)$/i,
-      //Æ¥Åä´óĞ´
+      //åŒ¹é…å¤§å†™
       capitalRE = /([A-Z])/g,
 
       // special attributes that should be get/set via method calls
-      //ĞèÒªÌá¹©getºÍsetµÄ·½·¨Ãû
+      //éœ€è¦æä¾›getå’Œsetçš„æ–¹æ³•å
       methodAttributes = ['val', 'css', 'html', 'text', 'data', 'width', 'height', 'offset'],
-      //ÏàÁÚ½ÚµãµÄÒ»Ğ©²Ù×÷
+      //ç›¸é‚»èŠ‚ç‚¹çš„ä¸€äº›æ“ä½œ
       adjacencyOperators = [ 'after', 'prepend', 'before', 'append' ],
       table = document.createElement('table'),
       tableRow = document.createElement('tr'),
-      //ÕâÀïµÄÓÃÍ¾ÊÇµ±ĞèÒª¸øtr,tbody,thead,tfoot,td,thÉèÖÃinnerHTMlµÄÊ±ºò£¬ĞèÒªÓÃÆä¸¸ÔªËØ×÷ÎªÈİÆ÷À´×°ÔØHTML×Ö·û´®
+      //è¿™é‡Œçš„ç”¨é€”æ˜¯å½“éœ€è¦ç»™tr,tbody,thead,tfoot,td,thè®¾ç½®innerHTMlçš„æ—¶å€™ï¼Œéœ€è¦ç”¨å…¶çˆ¶å…ƒç´ ä½œä¸ºå®¹å™¨æ¥è£…è½½HTMLå­—ç¬¦ä¸²
       containers = {
         'tr': document.createElement('tbody'),
         'tbody': table, 'thead': table, 'tfoot': table,
         'td': tableRow, 'th': tableRow,
         '*': document.createElement('div')
       },
-      //µ±DOM readyµÄÊ±ºò£¬document»áÓĞÒÔÏÂÈıÖÖ×´Ì¬µÄÒ»ÖÖ
+      //å½“DOM readyçš„æ—¶å€™ï¼Œdocumentä¼šæœ‰ä»¥ä¸‹ä¸‰ç§çŠ¶æ€çš„ä¸€ç§
       readyRE = /complete|loaded|interactive/,
-      //¼òµ¥Ñ¡ÔñÆ÷
+      //ç®€å•é€‰æ‹©å™¨
       simpleSelectorRE = /^[\w-]*$/,
       class2type = {},
       toString = class2type.toString,
@@ -70,40 +70,40 @@ var Zepto = (function() {
             return object instanceof Array
           };
 
-  //ÅĞ¶ÏÒ»¸öÔªËØÊÇ·ñÆ¥Åä¸ø¶¨µÄÑ¡ÔñÆ÷
+  //åˆ¤æ–­ä¸€ä¸ªå…ƒç´ æ˜¯å¦åŒ¹é…ç»™å®šçš„é€‰æ‹©å™¨
   zepto.matches = function(element, selector) {
     if (!selector || !element || element.nodeType !== 1) {
       return false;
     }
-    //ÒıÓÃä¯ÀÀÆ÷Ìá¹©µÄMatchesSelector·½·¨
+    //å¼•ç”¨æµè§ˆå™¨æä¾›çš„MatchesSelectoræ–¹æ³•
     var matchesSelector = element.webkitMatchesSelector || element.mozMatchesSelector ||
                           element.oMatchesSelector || element.matchesSelector;
     if (matchesSelector) {
       return matchesSelector.call(element, selector);
     }
     // fall back to performing a selector:
-    //Èç¹ûä¯ÀÀÆ÷²»Ö§³ÖMatchesSelector·½·¨£¬Ôò½«½Úµã·ÅÈëÒ»¸öÁÙÊ±div½Úµã£¬
-    //ÔÙÍ¨¹ıselectorÀ´²éÕÒÕâ¸ödivÏÂµÄ½Úµã¼¯£¬ÔÙÅĞ¶Ï¸ø¶¨µÄelementÊÇ·ñÔÚ½Úµã¼¯ÖĞ£¬Èç¹ûÔÚ£¬Ôò·µ»ØÒ»¸ö·ÇÁã(¼´·Çfalse)µÄÊı×Ö
+    //å¦‚æœæµè§ˆå™¨ä¸æ”¯æŒMatchesSelectoræ–¹æ³•ï¼Œåˆ™å°†èŠ‚ç‚¹æ”¾å…¥ä¸€ä¸ªä¸´æ—¶divèŠ‚ç‚¹ï¼Œ
+    //å†é€šè¿‡selectoræ¥æŸ¥æ‰¾è¿™ä¸ªdivä¸‹çš„èŠ‚ç‚¹é›†ï¼Œå†åˆ¤æ–­ç»™å®šçš„elementæ˜¯å¦åœ¨èŠ‚ç‚¹é›†ä¸­ï¼Œå¦‚æœåœ¨ï¼Œåˆ™è¿”å›ä¸€ä¸ªéé›¶(å³éfalse)çš„æ•°å­—
     var match, parent = element.parentNode, temp = !parent;
     if (temp) (parent = tempParent).appendChild(element);
-    match = ~zepto.qsa(parent, selector).indexOf(element);//-1±íÊ¾²»´æÔÚ£¬-1µÄ¶ş½øÖÆ²¹ÂëÈ«Îª1£¬~(-1)ÔòÎª0
+    match = ~zepto.qsa(parent, selector).indexOf(element);//-1è¡¨ç¤ºä¸å­˜åœ¨ï¼Œ-1çš„äºŒè¿›åˆ¶è¡¥ç å…¨ä¸º1ï¼Œ~(-1)åˆ™ä¸º0
     temp && tempParent.removeChild(element);
     return match;
   };
 
-  //·µ»ØobjµÄÀàĞÍ£¬ÀàĞÍ´æÔÚclass2typeÖĞ
+  //è¿”å›objçš„ç±»å‹ï¼Œç±»å‹å­˜åœ¨class2typeä¸­
   function type(obj) {
-    //objÎªnull»òÕßundefinedÊ±£¬Ö±½Ó·µ»Ø'null'»ò'undefined'
+    //objä¸ºnullæˆ–è€…undefinedæ—¶ï¼Œç›´æ¥è¿”å›'null'æˆ–'undefined'
     return obj == null ? String(obj) :
       class2type[toString.call(obj)] || "object";
   }
 
-  //ÅĞ¶ÏÊÇ·ñº¯Êı
+  //åˆ¤æ–­æ˜¯å¦å‡½æ•°
   function isFunction(value) {
     return type(value) == "function";
   }
 
-  //ÅĞ¶ÏÊÇ·ñwindow
+  //åˆ¤æ–­æ˜¯å¦window
   function isWindow(obj)     {
     return obj != null && obj == obj.window;
   }
@@ -113,36 +113,36 @@ var Zepto = (function() {
   function isObject(obj)     {
     return type(obj) == "object";
   }
-  //¶ÔÓÚÍ¨¹ı×ÖÃæÁ¿¶¨ÒåµÄ¶ÔÏóºÍnew ObjectµÄ¶ÔÏó·µ»Øtrue£¬new ObjectÊ±´«²ÎÊıµÄ·µ»Øfalse
+  //å¯¹äºé€šè¿‡å­—é¢é‡å®šä¹‰çš„å¯¹è±¡å’Œnew Objectçš„å¯¹è±¡è¿”å›trueï¼Œnew Objectæ—¶ä¼ å‚æ•°çš„è¿”å›false
   function isPlainObject(obj) {
     return isObject(obj) && !isWindow(obj) && Object.getPrototypeOf(obj) == Object.prototype;
   }
 
-  //ÊÇ·ñÀàÊı×é£¬±ÈÈçnodeList£¬Õâ¸öÖ»ÊÇ×ö×î¼òµ¥µÄÅĞ¶Ï£¬Èç¹û¸øÒ»¸ö¶ÔÏó¶¨ÒåÒ»¸öÖµÎªÊı¾İµÄlengthÊôĞÔ£¬ËüÍ¬Ñù»á·µ»Øtrue
+  //æ˜¯å¦ç±»æ•°ç»„ï¼Œæ¯”å¦‚nodeListï¼Œè¿™ä¸ªåªæ˜¯åšæœ€ç®€å•çš„åˆ¤æ–­ï¼Œå¦‚æœç»™ä¸€ä¸ªå¯¹è±¡å®šä¹‰ä¸€ä¸ªå€¼ä¸ºæ•°æ®çš„lengthå±æ€§ï¼Œå®ƒåŒæ ·ä¼šè¿”å›true
   function likeArray(obj) {
     return typeof obj.length == 'number';
   }
 
-  //¹ıÂËÊı×éµÄ¿ÕÖµ£¬Çå³ı¸ø¶¨µÄ²ÎÊıÖĞµÄnull»òundefined£¬×¢Òâ0==null,'' == nullÎªfalse
+  //è¿‡æ»¤æ•°ç»„çš„ç©ºå€¼ï¼Œæ¸…é™¤ç»™å®šçš„å‚æ•°ä¸­çš„nullæˆ–undefinedï¼Œæ³¨æ„0==null,'' == nullä¸ºfalse
   function compact(array) {
     return filter.call(array, function(item){
       return item != null;
     });
   }
 
-  //±âÆ½»¯Êı×é£¬½µÒ»Î¬
+  //æ‰å¹³åŒ–æ•°ç»„ï¼Œé™ä¸€ç»´
   function flatten(array) {
     return array.length > 0 ? $.fn.concat.apply([], array) : array;
   }
 
-  //½«×Ö·û´®×ª³ÉÍÕ·åÊ½µÄ¸ñÊ½
+  //å°†å­—ç¬¦ä¸²è½¬æˆé©¼å³°å¼çš„æ ¼å¼
   camelize = function(str){
     return str.replace(/-+(.)?/g, function(match, chr) {
       return chr ? chr.toUpperCase() : '';
     })
   };
 
-  //½«×Ö·û´®¸ñÊ½»¯³É-Æ´½ÓµÄĞÎÊ½,Ò»°ãÓÃÔÚÑùÊ½ÊôĞÔÉÏ£¬±ÈÈçborder-width
+  //å°†å­—ç¬¦ä¸²æ ¼å¼åŒ–æˆ-æ‹¼æ¥çš„å½¢å¼,ä¸€èˆ¬ç”¨åœ¨æ ·å¼å±æ€§ä¸Šï¼Œæ¯”å¦‚border-width
   function dasherize(str) {
     return str.replace(/::/g, '/')
            .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
@@ -151,25 +151,25 @@ var Zepto = (function() {
            .toLowerCase();
   }
 
-  //Êı×éÈ¥ÖØ£¬Èç¹û¸ÃÌõÊı¾İÔÚÊı×éÖĞµÄÎ»ÖÃÓëÑ­»·µÄË÷ÒıÖµ²»ÏàÍ¬£¬ÔòËµÃ÷Êı×éÖĞÓĞÓëÆäÏàÍ¬µÄÖµ
+  //æ•°ç»„å»é‡ï¼Œå¦‚æœè¯¥æ¡æ•°æ®åœ¨æ•°ç»„ä¸­çš„ä½ç½®ä¸å¾ªç¯çš„ç´¢å¼•å€¼ä¸ç›¸åŒï¼Œåˆ™è¯´æ˜æ•°ç»„ä¸­æœ‰ä¸å…¶ç›¸åŒçš„å€¼
   uniq = function(array){
     return filter.call(array, function(item, idx){
       return array.indexOf(item) == idx;
     })
   };
 
-  //½«¸ø¶¨µÄ²ÎÊıÉú³ÉÕıÔò
+  //å°†ç»™å®šçš„å‚æ•°ç”Ÿæˆæ­£åˆ™
   function classRE(name) {
     return name in classCache ?
       classCache[name] : (classCache[name] = new RegExp('(^|\\s)' + name + '(\\s|$)'));
   }
 
-  //¸øĞèÒªµÄÑùÊ½ÖµºóÃæ¼ÓÉÏ'px'µ¥Î»£¬³ıÁËcssNumberÀïÃæµÄÖ¸¶¨µÄÄÇĞ©
+  //ç»™éœ€è¦çš„æ ·å¼å€¼åé¢åŠ ä¸Š'px'å•ä½ï¼Œé™¤äº†cssNumberé‡Œé¢çš„æŒ‡å®šçš„é‚£äº›
   function maybeAddPx(name, value) {
     return (typeof value == "number" && !cssNumber[dasherize(name)]) ? value + "px" : value;
   }
 
-  //»ñÈ¡½ÚµãµÄÄ¬ÈÏdisplay
+  //è·å–èŠ‚ç‚¹çš„é»˜è®¤display
   function defaultDisplay(nodeName) {
     var element, display;
     if (!elementDisplay[nodeName]) {
@@ -177,13 +177,13 @@ var Zepto = (function() {
       document.body.appendChild(element);
       display = getComputedStyle(element, '').getPropertyValue("display");
       element.parentNode.removeChild(element);
-      display == "none" && (display = "block");//ÎªnoneÊ±ÉèÖÃ³Éblock
+      display == "none" && (display = "block");//ä¸ºnoneæ—¶è®¾ç½®æˆblock
       elementDisplay[nodeName] = display;
     }
     return elementDisplay[nodeName];
   }
 
-  //µÃµ½ÔªËØµÄ×Ó½ÚµãÊı×é£¬²»°üº¬ÎÄ±¾½Úµã
+  //å¾—åˆ°å…ƒç´ çš„å­èŠ‚ç‚¹æ•°ç»„ï¼Œä¸åŒ…å«æ–‡æœ¬èŠ‚ç‚¹
   function children(element) {
     return 'children' in element ?
       slice.call(element.children) :
@@ -194,7 +194,7 @@ var Zepto = (function() {
       });
   }
 
-  //ÉèÖÃzeptoÊµÀı¶ÔÏó,¹¹Ôìº¯Êı
+  //è®¾ç½®zeptoå®ä¾‹å¯¹è±¡,æ„é€ å‡½æ•°
   function Z(dom, selector) {
     var i, len = dom ? dom.length : 0;
     for (i = 0; i < len; i++) {
@@ -213,18 +213,18 @@ var Zepto = (function() {
     var dom, nodes, container;
 
     // A special case optimization for a single tag
-    //µ¥±êÇ©ÕıÔò<div> <div/> <div></div>£¬Ö±½Ó´´½¨dom¼´¿É
+    //å•æ ‡ç­¾æ­£åˆ™<div> <div/> <div></div>ï¼Œç›´æ¥åˆ›å»ºdomå³å¯
     if (singleTagRE.test(html)) {
       dom = $(document.createElement(RegExp.$1));
     }
 
-    //·Ç¿Õ±êÇ©
+    //éç©ºæ ‡ç­¾
     if (!dom) {
-      //°Ñ²»Ó¦¸Ãµ¥±ÕºÏµÄ±êÇ©¸Ä³É¶ÔÓ¦µÄË«±êÇ©
+      //æŠŠä¸åº”è¯¥å•é—­åˆçš„æ ‡ç­¾æ”¹æˆå¯¹åº”çš„åŒæ ‡ç­¾
       if (html.replace) {
         html = html.replace(tagExpanderRE, "<$1></$2>");
       }
-      //µÃµ½±êÇ©Ãû
+      //å¾—åˆ°æ ‡ç­¾å
       if (name === undefined) {
         name = fragmentRE.test(html) && RegExp.$1;
       }
@@ -234,13 +234,13 @@ var Zepto = (function() {
 
       container = containers[name];
       container.innerHTML = '' + html;
-      //È¡³öÈİÆ÷µÄ×Ó½Úµã£¬²¢ÇÒÇå¿Õcontainer
+      //å–å‡ºå®¹å™¨çš„å­èŠ‚ç‚¹ï¼Œå¹¶ä¸”æ¸…ç©ºcontainer
       dom = $.each(slice.call(container.childNodes), function(){
         container.removeChild(this);
       })
     }
 
-    //¼ÓÉÏÊôĞÔ»òÕßÆäËû
+    //åŠ ä¸Šå±æ€§æˆ–è€…å…¶ä»–
     if (isPlainObject(properties)) {
       nodes = $(dom);
       $.each(properties, function(key, value) {
@@ -253,7 +253,7 @@ var Zepto = (function() {
       });
     }
 
-    return dom;//Ô­Éúdom¶ÔÏóÊı×é
+    return dom;//åŸç”Ÿdomå¯¹è±¡æ•°ç»„
   };
 
   // `$.zepto.Z` swaps out the prototype of the given `dom` array
@@ -285,7 +285,7 @@ var Zepto = (function() {
       // If it's a html fragment, create nodes from it
       // Note: In both Chrome 21 and Firefox 15, DOM error 12
       // is thrown if the fragment doesn't begin with <
-      //´´½¨½Úµã
+      //åˆ›å»ºèŠ‚ç‚¹
       if (selector[0] == '<' && fragmentRE.test(selector)) {
         dom = zepto.fragment(selector, RegExp.$1, context);
         selector = null;
@@ -311,7 +311,7 @@ var Zepto = (function() {
     else {
       // normalize array if an array of nodes is given
       if (isArray(selector)) {
-        dom = compact(selector);//È¥³ı¿ÕÖµ
+        dom = compact(selector);//å»é™¤ç©ºå€¼
       }
       // Wrap DOM nodes.
       else if (isObject(selector)) {
@@ -320,7 +320,7 @@ var Zepto = (function() {
       }
 
       // If it's a html fragment, create nodes from it
-      //²»Ã÷°×ÎªÊ²Ã´»¹ÒªÔÙÅĞÒ»´Î£¬·Ç×Ö·û´®
+      //ä¸æ˜ç™½ä¸ºä»€ä¹ˆè¿˜è¦å†åˆ¤ä¸€æ¬¡ï¼Œéå­—ç¬¦ä¸²
       else if (fragmentRE.test(selector)) {
         dom = zepto.fragment(selector.trim(), RegExp.$1, context);
         selector = null;
@@ -343,12 +343,12 @@ var Zepto = (function() {
   // function just call `$.zepto.init, which makes the implementation
   // details of selecting nodes and creating Zepto collections
   // patchable in plugins.
-  // $±¾ÉíÊÇ¸öº¯Êı£¬´øÁËÒ»¶Ñº¯ÊıÊôĞÔ£¬»¹ÓĞ¸öfnÊôĞÔ£¬ÊÇ¸ö¶ÔÏó
+  // $æœ¬èº«æ˜¯ä¸ªå‡½æ•°ï¼Œå¸¦äº†ä¸€å †å‡½æ•°å±æ€§ï¼Œè¿˜æœ‰ä¸ªfnå±æ€§ï¼Œæ˜¯ä¸ªå¯¹è±¡
   $ = function(selector, context){
     return zepto.init(selector, context);
   };
 
-  //À©Õ¹£¬deep±íÊ¾ÊÇ·ñÉî¶ÈÀ©Õ¹
+  //æ‰©å±•ï¼Œdeepè¡¨ç¤ºæ˜¯å¦æ·±åº¦æ‰©å±•
   function extend(target, source, deep) {
     for (key in source) {
       if (deep && (isPlainObject(source[key]) || isArray(source[key]))) {
@@ -360,7 +360,7 @@ var Zepto = (function() {
         }
         extend(target[key], source[key], deep);
       }
-      //²»»áÀ©Õ¹ÏÔÊ¾ÖÃÎªundefinedµÄÊôĞÔ
+      //ä¸ä¼šæ‰©å±•æ˜¾ç¤ºç½®ä¸ºundefinedçš„å±æ€§
       else if (source[key] !== undefined) {
         target[key] = source[key];
       }
@@ -386,13 +386,13 @@ var Zepto = (function() {
   // This method can be overriden in plugins.
   zepto.qsa = function(element, selector){
     var found,
-        maybeID = selector[0] == '#',//idµÄÇé¿ö
-        maybeClass = !maybeID && selector[0] == '.',//classµÄÇé¿ö
+        maybeID = selector[0] == '#',//idçš„æƒ…å†µ
+        maybeClass = !maybeID && selector[0] == '.',//classçš„æƒ…å†µ
         nameOnly = maybeID || maybeClass ? selector.slice(1) : selector, // Ensure that a 1 char tag name still gets checked
         isSimple = simpleSelectorRE.test(nameOnly);
     return (element.getElementById && isSimple && maybeID) ? // Safari DocumentFragment doesn't have getElementById
       ( (found = element.getElementById(nameOnly)) ? [found] : [] ) :
-      (element.nodeType !== 1 && element.nodeType !== 9 && element.nodeType !== 11) ? [] ://1£ºÔªËØ£¬9£ºdocument£¬11£ºÆ¬¶Îfragment
+      (element.nodeType !== 1 && element.nodeType !== 9 && element.nodeType !== 11) ? [] ://1ï¼šå…ƒç´ ï¼Œ9ï¼šdocumentï¼Œ11ï¼šç‰‡æ®µfragment
       slice.call(
         isSimple && !maybeID && element.getElementsByClassName ? // DocumentFragment doesn't have getElementsByClassName/TagName
           maybeClass ? element.getElementsByClassName(nameOnly) : // If it's simple, it could be a class
@@ -401,12 +401,12 @@ var Zepto = (function() {
       );
   };
 
-  //¹ıÂË
+  //è¿‡æ»¤
   function filtered(nodes, selector) {
     return selector == null ? $(nodes) : $(nodes).filter(selector);
   }
 
-  //ÅĞ¶ÏparentÊÇ·ñ°üº¬node
+  //åˆ¤æ–­parentæ˜¯å¦åŒ…å«node
   $.contains = document.documentElement.contains ?
     function(parent, node) {
       return parent !== node && parent.contains(node);
@@ -420,13 +420,13 @@ var Zepto = (function() {
       return false;
     };
 
-  //Õâ¸öº¯ÊıÔÚÕû¸ö¿âÖĞÈ¡×ÅºÜµÃÒªµÄ×÷ÓÃ£¬´¦ÀíargÎªº¯Êı»òÕßÖµµÄÇé¿ö
-  //ÏÂÃæºÜ¶àÉèÖÃÔªËØÊôĞÔÊ±µÄº¯Êı¶¼ÓĞÓÃµ½
+  //è¿™ä¸ªå‡½æ•°åœ¨æ•´ä¸ªåº“ä¸­å–ç€å¾ˆå¾—è¦çš„ä½œç”¨ï¼Œå¤„ç†argä¸ºå‡½æ•°æˆ–è€…å€¼çš„æƒ…å†µ
+  //ä¸‹é¢å¾ˆå¤šè®¾ç½®å…ƒç´ å±æ€§æ—¶çš„å‡½æ•°éƒ½æœ‰ç”¨åˆ°
   function funcArg(context, arg, idx, payload) {
     return isFunction(arg) ? arg.call(context, idx, payload) : arg;
   }
 
-  //Èç¹ûÉèÖÃµÄÖµÎªnull»òundefined,ÔòÏàµ±ÓÚÉ¾³ı¸ÃÊôĞÔ£¬·ñÔòÉèÖÃnameÊôĞÔÎªvalue
+  //å¦‚æœè®¾ç½®çš„å€¼ä¸ºnullæˆ–undefined,åˆ™ç›¸å½“äºåˆ é™¤è¯¥å±æ€§ï¼Œå¦åˆ™è®¾ç½®nameå±æ€§ä¸ºvalue
   function setAttribute(node, name, value) {
     value == null ? node.removeAttribute(name) : node.setAttribute(name, value)
   }
@@ -471,7 +471,7 @@ var Zepto = (function() {
   $.isArray = isArray;
   $.isPlainObject = isPlainObject;
 
-  //¿Õ¶ÔÏó
+  //ç©ºå¯¹è±¡
   $.isEmptyObject = function(obj) {
     var name;
     for (name in obj) {
@@ -480,8 +480,8 @@ var Zepto = (function() {
     return true;
   };
 
-  //callÊÇÒ»¸öÒ»¸ö´«²Î
-  //applyÊÇ¸ø¸öÎ±Êı×é
+  //callæ˜¯ä¸€ä¸ªä¸€ä¸ªä¼ å‚
+  //applyæ˜¯ç»™ä¸ªä¼ªæ•°ç»„
   $.inArray = function(elem, array, i){
     return emptyArray.indexOf.call(array, elem, i);
   };
@@ -518,7 +518,7 @@ var Zepto = (function() {
     return flatten(values);
   };
 
-  //callbackÎªfalse¾ÍÖ±½ÓÖÕÖ¹each
+  //callbackä¸ºfalseå°±ç›´æ¥ç»ˆæ­¢each
   $.each = function(elements, callback){
     var i, key;
     if (likeArray(elements)) {
@@ -564,7 +564,7 @@ var Zepto = (function() {
     sort: emptyArray.sort,
     splice: emptyArray.splice,
     indexOf: emptyArray.indexOf,
-    //½«²ÎÊıÈ«²¿Ìí¼Óµ½µ±Ç°zepto¶ÔÏó
+    //å°†å‚æ•°å…¨éƒ¨æ·»åŠ åˆ°å½“å‰zeptoå¯¹è±¡
     concat: function(){
       var i, value, args = [];
       for (i = 0; i < arguments.length; i++) {
@@ -584,7 +584,7 @@ var Zepto = (function() {
     slice: function(){
       return $(slice.apply(this, arguments));
     },
-    //ready´¥·¢
+    //readyè§¦å‘
     ready: function(callback){
       // need to check if document.body exists for IE as that browser reports
       // document ready when it hasn't yet created the body element
@@ -598,91 +598,91 @@ var Zepto = (function() {
       }
       return this
     },
-    //ÎŞ²ÎÊı×ª³ÉÊı×é·µ»Ø£¬·µ»ØµÄÊÇÔ­ÉúDOM
-    //È¡¼¯ºÏÖĞ¶ÔÓ¦Ö¸¶¨Ë÷ÒıµÄÖµ£¬Èç¹ûidxĞ¡ÓÚ0,ÔòidxµÈÓÚidx+length,lengthÎª¼¯ºÏµÄ³¤¶È
+    //æ— å‚æ•°è½¬æˆæ•°ç»„è¿”å›ï¼Œè¿”å›çš„æ˜¯åŸç”ŸDOM
+    //å–é›†åˆä¸­å¯¹åº”æŒ‡å®šç´¢å¼•çš„å€¼ï¼Œå¦‚æœidxå°äº0,åˆ™idxç­‰äºidx+length,lengthä¸ºé›†åˆçš„é•¿åº¦
     get: function(idx){
       return idx === undefined ? slice.call(this) : this[idx >= 0 ? idx : idx + this.length];
     },
-    //½«¼¯ºÏ×ª»»ÎªÊı×é
-    //Ö±½Óµ÷ÓÃget
+    //å°†é›†åˆè½¬æ¢ä¸ºæ•°ç»„
+    //ç›´æ¥è°ƒç”¨get
     toArray: function(){
       return this.get();
     },
-    //»ñÈ¡¼¯ºÏ³¤¶È
+    //è·å–é›†åˆé•¿åº¦
     size: function(){
       return this.length;
     },
-    //µ÷ÓÃeach£¬ÎŞ·µ»Ø
-    //½«¼¯ºÏ´ÓdomÖĞÉ¾³ı
+    //è°ƒç”¨eachï¼Œæ— è¿”å›
+    //å°†é›†åˆä»domä¸­åˆ é™¤
     remove: function(){
       return this.each(function(){
         if (this.parentNode != null)
           this.parentNode.removeChild(this);
       });
     },
-    //Ê¹ÓÃÊı×éµÄevery
-    //±éÀú¼¯ºÏ£¬½«¼¯ºÏÖĞµÄÃ¿Ò»Ïî·ÅÈëcallbackÖĞ½øĞĞ´¦Àí£¬È¥µô½á¹ûÎªfalseµÄÏî£¬×¢ÒâÕâÀïµÄcallbackÈç¹ûÃ÷È··µ»Øfalse
-    //ÄÇÃ´¾Í»áÍ£Ö¹Ñ­»·ÁË
+    //ä½¿ç”¨æ•°ç»„çš„every
+    //éå†é›†åˆï¼Œå°†é›†åˆä¸­çš„æ¯ä¸€é¡¹æ”¾å…¥callbackä¸­è¿›è¡Œå¤„ç†ï¼Œå»æ‰ç»“æœä¸ºfalseçš„é¡¹ï¼Œæ³¨æ„è¿™é‡Œçš„callbackå¦‚æœæ˜ç¡®è¿”å›false
+    //é‚£ä¹ˆå°±ä¼šåœæ­¢å¾ªç¯äº†
     each: function(callback){
       emptyArray.every.call(this, function(el, idx){
         return callback.call(el, idx, el) !== false;
       });
       return this;
     },
-    //¹ıÂË¼¯ºÏ£¬·µ»Ø´¦Àí½á¹ûÎªtrueµÄ¼ÇÂ¼
+    //è¿‡æ»¤é›†åˆï¼Œè¿”å›å¤„ç†ç»“æœä¸ºtrueçš„è®°å½•
     filter: function(selector){
       if (isFunction(selector)) {
-        //this.not(selector)È¡µ½ĞèÒªÅÅ³ıµÄ¼¯ºÏ£¬µÚ¶ş´ÎÔÙÈ¡·´(Õâ¸öÊ±ºòthis.notµÄ²ÎÊı¾ÍÊÇÒ»¸ö¼¯ºÏÁË)£¬µÃµ½ÏëÒªµÄ¼¯ºÏ
-        return this.not(this.not(selector));//Ë«ÖØnot£¬ÄÚ²ãnot·µ»ØdomÊı×é
+        //this.not(selector)å–åˆ°éœ€è¦æ’é™¤çš„é›†åˆï¼Œç¬¬äºŒæ¬¡å†å–å(è¿™ä¸ªæ—¶å€™this.notçš„å‚æ•°å°±æ˜¯ä¸€ä¸ªé›†åˆäº†)ï¼Œå¾—åˆ°æƒ³è¦çš„é›†åˆ
+        return this.not(this.not(selector));//åŒé‡notï¼Œå†…å±‚notè¿”å›domæ•°ç»„
       }
-      //$µÄ²ÎÊıÊÇÊı×é
-      //filterÊÕ¼¯·µ»Ø½á¹ûÎªtrueµÄ¼ÇÂ¼
+      //$çš„å‚æ•°æ˜¯æ•°ç»„
+      //filteræ”¶é›†è¿”å›ç»“æœä¸ºtrueçš„è®°å½•
       return $(filter.call(this, function(element){
         return zepto.matches(element, selector);
       }));
     },
-    //Ìí¼ÓÔªËØ
-    //½«ÓÉselector»ñÈ¡µ½µÄ½á¹û×·¼Óµ½µ±Ç°¼¯ºÏÖĞ
+    //æ·»åŠ å…ƒç´ 
+    //å°†ç”±selectorè·å–åˆ°çš„ç»“æœè¿½åŠ åˆ°å½“å‰é›†åˆä¸­
     add: function(selector,context){
       return $(uniq(this.concat($(selector,context))));
     },
-    //Ê¹ÓÃmatch£¬µ«ÊÇÖ»Ê¹ÓÃµÚÒ»¸ödom
-    //·µ»Ø¼¯ºÏÖĞµÄµÚ1Ìõ¼ÇÂ¼ÊÇ·ñÓëselectorÆ¥Åä
+    //ä½¿ç”¨matchï¼Œä½†æ˜¯åªä½¿ç”¨ç¬¬ä¸€ä¸ªdom
+    //è¿”å›é›†åˆä¸­çš„ç¬¬1æ¡è®°å½•æ˜¯å¦ä¸selectoråŒ¹é…
     is: function(selector){
       return this.length > 0 && zepto.matches(this[0], selector);
     },
-    //ÅÅ³ı¼¯ºÏÀïÂú×ãÌõ¼şµÄ¼ÇÂ¼£¬½ÓÊÕ²ÎÊıÎª£ºcssÑ¡ÔñÆ÷£¬function, dom ,nodeList
+    //æ’é™¤é›†åˆé‡Œæ»¡è¶³æ¡ä»¶çš„è®°å½•ï¼Œæ¥æ”¶å‚æ•°ä¸ºï¼šcssé€‰æ‹©å™¨ï¼Œfunction, dom ,nodeList
     not: function(selector){
       var nodes=[];
-      //µ±selectorÎªº¯ÊıÊ±£¬safariÏÂµÄtypeof NodeListÒ²ÊÇfunction£¬ËùÒÔÕâÀïĞèÒªÔÙ¼ÓÒ»¸öÅĞ¶Ïselector.call !== undefined
+      //å½“selectorä¸ºå‡½æ•°æ—¶ï¼Œsafariä¸‹çš„typeof NodeListä¹Ÿæ˜¯functionï¼Œæ‰€ä»¥è¿™é‡Œéœ€è¦å†åŠ ä¸€ä¸ªåˆ¤æ–­selector.call !== undefined
       if (isFunction(selector) && selector.call !== undefined) {
-        //×¢ÒâÕâÀïÊÕ¼¯µÄÊÇselector.call(this,idx)·µ»Ø½á¹ûÎªfalseµÄÊ±ºò¼ÇÂ¼
+        //æ³¨æ„è¿™é‡Œæ”¶é›†çš„æ˜¯selector.call(this,idx)è¿”å›ç»“æœä¸ºfalseçš„æ—¶å€™è®°å½•
         this.each(function(idx){
           if (!selector.call(this,idx)) {
             nodes.push(this);
           }
         });
       } else {
-        //µ±selectorÎª×Ö·û´®µÄÊ±ºò£¬¶Ô¼¯ºÏ½øĞĞÉ¸Ñ¡£¬Ò²¾ÍÊÇÉ¸Ñ¡³ö¼¯ºÏÖĞÂú×ãselectorµÄ¼ÇÂ¼
+        //å½“selectorä¸ºå­—ç¬¦ä¸²çš„æ—¶å€™ï¼Œå¯¹é›†åˆè¿›è¡Œç­›é€‰ï¼Œä¹Ÿå°±æ˜¯ç­›é€‰å‡ºé›†åˆä¸­æ»¡è¶³selectorçš„è®°å½•
         var excludes = typeof selector == 'string' ? this.filter(selector) :
-          //µ±selectorÎªnodeListÊ±Ö´ĞĞslice.call(selector),×¢ÒâÕâÀïµÄisFunction(selector.item)ÊÇÎªÁËÅÅ³ıselectorÎªÊı×éµÄÇé¿ö
-          //µ±selectorÎªcssÑ¡ÔñÆ÷£¬Ö´ĞĞ$(selector)
+          //å½“selectorä¸ºnodeListæ—¶æ‰§è¡Œslice.call(selector),æ³¨æ„è¿™é‡Œçš„isFunction(selector.item)æ˜¯ä¸ºäº†æ’é™¤selectorä¸ºæ•°ç»„çš„æƒ…å†µ
+          //å½“selectorä¸ºcssé€‰æ‹©å™¨ï¼Œæ‰§è¡Œ$(selector)
           (likeArray(selector) && isFunction(selector.item)) ? slice.call(selector) : $(selector);
         this.forEach(function(el){
           if (excludes.indexOf(el) < 0) {
-            //É¸Ñ¡³ö²»ÔÚexcludes¼¯ºÏÀïµÄ¼ÇÂ¼£¬´ïµ½ÅÅ³ıµÄÄ¿µÄ
+            //ç­›é€‰å‡ºä¸åœ¨excludesé›†åˆé‡Œçš„è®°å½•ï¼Œè¾¾åˆ°æ’é™¤çš„ç›®çš„
             nodes.push(el);
           }
         });
       }
-      return $(nodes);//ÓÉÓÚÉÏÃæµÃµ½µÄ½á¹ûÊÇÊı×é£¬ÕâÀïĞèÒª×ª³Ézepto¶ÔÏó£¬ÒÔ±ã¼Ì³ĞÆäËü·½·¨£¬ÊµÏÖÁ´Ğ´
+      return $(nodes);//ç”±äºä¸Šé¢å¾—åˆ°çš„ç»“æœæ˜¯æ•°ç»„ï¼Œè¿™é‡Œéœ€è¦è½¬æˆzeptoå¯¹è±¡ï¼Œä»¥ä¾¿ç»§æ‰¿å…¶å®ƒæ–¹æ³•ï¼Œå®ç°é“¾å†™
     },
-    //ÊÇ·ñº¬ÓĞ×ÓÔªËØ
+    //æ˜¯å¦å«æœ‰å­å…ƒç´ 
     /*
-     ½ÓÊÕnodeºÍstring×÷Îª²ÎÊı£¬¸øµ±Ç°¼¯ºÏÉ¸Ñ¡³ö°üº¬selectorµÄ¼¯ºÏ
-     isObject(selector)ÊÇÅĞ¶Ï²ÎÊıÊÇ·ñÊÇnode£¬ÒòÎªtypeof node == 'object'
-     µ±²ÎÊıÎªnodeÊ±£¬Ö»ĞèÒªÅĞ¶Áµ±Ç°¼Çµ±ÀïÊÇ·ñ°üº¬node½Úµã¼´¿É
-     µ±²ÎÊıÎªstringÊ±£¬ÔòÔÚµ±Ç°¼ÇÂ¼Àï²éÑ¯selector£¬Èç¹û³¤¶ÈÎª0£¬ÔòÎªfalse£¬filterº¯Êı¾Í»á¹ıÂËµôÕâÌõ¼ÇÂ¼£¬·ñÔò±£´æ¸Ã¼ÇÂ¼
+     æ¥æ”¶nodeå’Œstringä½œä¸ºå‚æ•°ï¼Œç»™å½“å‰é›†åˆç­›é€‰å‡ºåŒ…å«selectorçš„é›†åˆ
+     isObject(selector)æ˜¯åˆ¤æ–­å‚æ•°æ˜¯å¦æ˜¯nodeï¼Œå› ä¸ºtypeof node == 'object'
+     å½“å‚æ•°ä¸ºnodeæ—¶ï¼Œåªéœ€è¦åˆ¤è¯»å½“å‰è®°å½“é‡Œæ˜¯å¦åŒ…å«nodeèŠ‚ç‚¹å³å¯
+     å½“å‚æ•°ä¸ºstringæ—¶ï¼Œåˆ™åœ¨å½“å‰è®°å½•é‡ŒæŸ¥è¯¢selectorï¼Œå¦‚æœé•¿åº¦ä¸º0ï¼Œåˆ™ä¸ºfalseï¼Œfilterå‡½æ•°å°±ä¼šè¿‡æ»¤æ‰è¿™æ¡è®°å½•ï¼Œå¦åˆ™ä¿å­˜è¯¥è®°å½•
     */
     has: function(selector){
       return this.filter(function(){
@@ -691,46 +691,46 @@ var Zepto = (function() {
           $(this).find(selector).size();
       });
     },
-    //Ñ¡Ôñ¼¯ºÏÖĞÖ¸¶¨Ë÷ÒıµÄ¼ÇÂ¼£¬µ±idxÎª-1Ê±£¬È¡×îºóÒ»¸ö¼ÇÂ¼
+    //é€‰æ‹©é›†åˆä¸­æŒ‡å®šç´¢å¼•çš„è®°å½•ï¼Œå½“idxä¸º-1æ—¶ï¼Œå–æœ€åä¸€ä¸ªè®°å½•
     eq: function(idx){
       return idx === -1 ? this.slice(idx) : this.slice(idx, + idx + 1);
     },
-    //È¡¼¯ºÏÖĞµÄµÚÒ»Ìõ¼ÇÂ¼
-    //Èç¹û¼¯ºÏÖĞµÄµÚÒ»ÌõÊı¾İ±¾Éí¾ÍÒÑ¾­ÊÇzepto¶ÔÏóÔòÖ±½Ó·µ»Ø±¾Éí£¬·ñÔò×ª³Ézepto¶ÔÏó
-    //el && !isObject(el)ÔÚÕâÀïÈ¡µ½Ò»¸öÅĞ¶ÏelÊÇ·ñÎª½ÚµãµÄÇé¿ö£¬ÒòÎªÈç¹ûelÊÇ½Úµã£¬ÄÇÃ´isObject(el)µÄ½á¹û¾ÍÊÇtrue
+    //å–é›†åˆä¸­çš„ç¬¬ä¸€æ¡è®°å½•
+    //å¦‚æœé›†åˆä¸­çš„ç¬¬ä¸€æ¡æ•°æ®æœ¬èº«å°±å·²ç»æ˜¯zeptoå¯¹è±¡åˆ™ç›´æ¥è¿”å›æœ¬èº«ï¼Œå¦åˆ™è½¬æˆzeptoå¯¹è±¡
+    //el && !isObject(el)åœ¨è¿™é‡Œå–åˆ°ä¸€ä¸ªåˆ¤æ–­elæ˜¯å¦ä¸ºèŠ‚ç‚¹çš„æƒ…å†µï¼Œå› ä¸ºå¦‚æœelæ˜¯èŠ‚ç‚¹ï¼Œé‚£ä¹ˆisObject(el)çš„ç»“æœå°±æ˜¯true
     first: function(){
       var el = this[0];
       return el && !isObject(el) ? el : $(el);
     },
-    //È¡¼¯ºÏÖĞµÄ×îºóÒ»Ìõ¼ÇÂ¼
-    //Èç¹ûelÎªnode,ÔòisObject(el)»áÎªtrue,ĞèÒª×ª³Ézepto¶ÔÏó
+    //å–é›†åˆä¸­çš„æœ€åä¸€æ¡è®°å½•
+    //å¦‚æœelä¸ºnode,åˆ™isObject(el)ä¼šä¸ºtrue,éœ€è¦è½¬æˆzeptoå¯¹è±¡
     last: function(){
       var el = this[this.length - 1];
       return el && !isObject(el) ? el : $(el);
     },
-    //ÔÚµ±Ç°¼¯ºÏÖĞ²éÕÒselector£¬selector¿ÉÒÔÊÇ¼¯ºÏ£¬Ñ¡ÔñÆ÷£¬ÒÔ¼°½Úµã
+    //åœ¨å½“å‰é›†åˆä¸­æŸ¥æ‰¾selectorï¼Œselectorå¯ä»¥æ˜¯é›†åˆï¼Œé€‰æ‹©å™¨ï¼Œä»¥åŠèŠ‚ç‚¹
     find: function(selector){
       var result, $this = this;
       if (!selector) {
         result = $();
       }
-      //Èç¹ûselectorÎªnode»òÕßzepto¼¯ºÏÊ±
-      //±éÀúselector£¬É¸Ñ¡³ö¸¸¼¶Îª¼¯ºÏÖĞ¼ÇÂ¼µÄselector
+      //å¦‚æœselectorä¸ºnodeæˆ–è€…zeptoé›†åˆæ—¶
+      //éå†selectorï¼Œç­›é€‰å‡ºçˆ¶çº§ä¸ºé›†åˆä¸­è®°å½•çš„selector
       else if (typeof selector == 'object') {
         result = $(selector).filter(function(){
           var node = this;
-          //Èç¹û$.contains(parent, node)·µ»Øtrue£¬ÔòemptyArray.someÒ²»á·µ»Øtrue,Íâ²ãµÄfilterÔò»áÊÕÂ¼¸ÃÌõ¼ÇÂ¼
+          //å¦‚æœ$.contains(parent, node)è¿”å›trueï¼Œåˆ™emptyArray.someä¹Ÿä¼šè¿”å›true,å¤–å±‚çš„filteråˆ™ä¼šæ”¶å½•è¯¥æ¡è®°å½•
           return emptyArray.some.call($this, function(parent){
             return $.contains(parent, node);
           })
         });
       }
-      //Èç¹ûselectorÊÇcssÑ¡ÔñÆ÷
-      //Èç¹ûµ±Ç°¼¯ºÏ³¤¶ÈÎª1Ê±£¬µ÷ÓÃzepto.qsa£¬½«½á¹û×ª³Ézepto¶ÔÏó
+      //å¦‚æœselectoræ˜¯cssé€‰æ‹©å™¨
+      //å¦‚æœå½“å‰é›†åˆé•¿åº¦ä¸º1æ—¶ï¼Œè°ƒç”¨zepto.qsaï¼Œå°†ç»“æœè½¬æˆzeptoå¯¹è±¡
       else if (this.length == 1) {
         result = $(zepto.qsa(this[0], selector));
       }
-      //Èç¹û³¤¶È´óÓÚ1£¬Ôòµ÷ÓÃmap±éÀú
+      //å¦‚æœé•¿åº¦å¤§äº1ï¼Œåˆ™è°ƒç”¨mapéå†
       else {
         result = this.map(function(){
           return zepto.qsa(this, selector);
@@ -738,57 +738,57 @@ var Zepto = (function() {
       }
       return result;
     },
-    //È¡¼¯ºÏÖĞµÚÒ»¸ödomµÄ×î½üµÄÂú×ãÌõ¼şµÄ¸¸¼¶ÔªËØ
+    //å–é›†åˆä¸­ç¬¬ä¸€ä¸ªdomçš„æœ€è¿‘çš„æ»¡è¶³æ¡ä»¶çš„çˆ¶çº§å…ƒç´ 
     closest: function(selector, context){
       var node = this[0], collection = false;
       if (typeof selector == 'object') {
         collection = $(selector);
       }
-      //µ±selectorÊÇnode»òÕßzepto¼¯ºÏÊ±£¬Èç¹ûnode²»ÔÚcollection¼¯ºÏÖĞÊ±ĞèÒªÈ¡node.parentNode½øĞĞÅĞ¶Ï
-      //µ±selectorÊÇ×Ö·û´®Ñ¡ÔñÆ÷Ê±£¬Èç¹ûnodeÓëselector²»Æ¥Åä£¬ÔòĞèÒªÈ¡node.parentNode½øĞĞÅĞ¶Ï
+      //å½“selectoræ˜¯nodeæˆ–è€…zeptoé›†åˆæ—¶ï¼Œå¦‚æœnodeä¸åœ¨collectioné›†åˆä¸­æ—¶éœ€è¦å–node.parentNodeè¿›è¡Œåˆ¤æ–­
+      //å½“selectoræ˜¯å­—ç¬¦ä¸²é€‰æ‹©å™¨æ—¶ï¼Œå¦‚æœnodeä¸selectorä¸åŒ¹é…ï¼Œåˆ™éœ€è¦å–node.parentNodeè¿›è¡Œåˆ¤æ–­
       while (node && !(collection ? collection.indexOf(node) >= 0 : zepto.matches(node, selector))) {
-        //µ±node ²»ÊÇcontext,documentµÄÊ±ºò£¬È¡node.parentNode
+        //å½“node ä¸æ˜¯context,documentçš„æ—¶å€™ï¼Œå–node.parentNode
         node = node !== context && !isDocument(node) && node.parentNode;
       }
       return $(node);
     },
-    //È¡¼¯ºÏËùÓĞ¸¸¼¶ÔªËØ
+    //å–é›†åˆæ‰€æœ‰çˆ¶çº§å…ƒç´ 
     parents: function(selector){
       var ancestors = [], nodes = this;
       while (nodes.length > 0) {
-        //Í¨¹ı±éÀúnodesµÃµ½ËùÓĞ¸¸¼¶£¬×¢ÒâÔÚwhileÀïnodes±»ÖØĞÂ¸³ÖµÁË
-        //±¾º¯ÊıµÄÇÉÃîÖ®´¦ÔÚÓÚ£¬²»Í£ÔÚ»ñÈ¡¸¸¼¶£¬ÔÙ±éÀú¸¸¼¶»ñÈ¡¸¸¼¶µÄ¸¸¼¶
-        //È»ºóÔÙÍ¨¹ıÈ¥ÖØ£¬µÃµ½×îÖÕÏëÒªµÄ½á¹û£¬µ±µ½´ï×î¶¥²ãµÄ¸¸¼¶Ê±£¬nodes.length¾ÍÎª0ÁË
-        //nodes±»ÖØĞÂ¸³ÖµÎªÊÕ¼¯µ½µÄ¸¸¼¶¼¯ºÏ
+        //é€šè¿‡éå†nodeså¾—åˆ°æ‰€æœ‰çˆ¶çº§ï¼Œæ³¨æ„åœ¨whileé‡Œnodesè¢«é‡æ–°èµ‹å€¼äº†
+        //æœ¬å‡½æ•°çš„å·§å¦™ä¹‹å¤„åœ¨äºï¼Œä¸åœåœ¨è·å–çˆ¶çº§ï¼Œå†éå†çˆ¶çº§è·å–çˆ¶çº§çš„çˆ¶çº§
+        //ç„¶åå†é€šè¿‡å»é‡ï¼Œå¾—åˆ°æœ€ç»ˆæƒ³è¦çš„ç»“æœï¼Œå½“åˆ°è¾¾æœ€é¡¶å±‚çš„çˆ¶çº§æ—¶ï¼Œnodes.lengthå°±ä¸º0äº†
+        //nodesè¢«é‡æ–°èµ‹å€¼ä¸ºæ”¶é›†åˆ°çš„çˆ¶çº§é›†åˆ
         nodes = $.map(nodes, function(node){
-          //±éÀúnodes£¬ÊÕ¼¯¼¯ºÏµÄµÚÒ»²ã¸¸¼¶
-          //ancestors.indexOf(node) < 0ÓÃÀ´È¥ÖØ¸´
+          //éå†nodesï¼Œæ”¶é›†é›†åˆçš„ç¬¬ä¸€å±‚çˆ¶çº§
+          //ancestors.indexOf(node) < 0ç”¨æ¥å»é‡å¤
           if ((node = node.parentNode) && !isDocument(node) && ancestors.indexOf(node) < 0) {
-            ancestors.push(node);//ÊÕ¼¯ÒÑ¾­»ñÈ¡µ½µÄ¸¸¼¶ÔªËØ£¬ÓÃÓÚÈ¥ÖØ¸´
+            ancestors.push(node);//æ”¶é›†å·²ç»è·å–åˆ°çš„çˆ¶çº§å…ƒç´ ï¼Œç”¨äºå»é‡å¤
             return node;
           }
         });
       }
-      //ÉÏÃæ»¹Ö»ÊÇÈ¡µ½ÁËËùÓĞµÄ¸¸¼¶ÔªËØ£¬ÕâÀï»¹ĞèÒª¶ÔÆä½øĞĞÉ¸Ñ¡´Ó¶øµÃµ½×îÖÕÏëÒªµÄ½á¹û
+      //ä¸Šé¢è¿˜åªæ˜¯å–åˆ°äº†æ‰€æœ‰çš„çˆ¶çº§å…ƒç´ ï¼Œè¿™é‡Œè¿˜éœ€è¦å¯¹å…¶è¿›è¡Œç­›é€‰ä»è€Œå¾—åˆ°æœ€ç»ˆæƒ³è¦çš„ç»“æœ
       return filtered(ancestors, selector);
     },
-    //»ñÈ¡¼¯ºÏµÄ¸¸½Úµã
+    //è·å–é›†åˆçš„çˆ¶èŠ‚ç‚¹
     parent: function(selector){
       return filtered(uniq(this.pluck('parentNode')), selector);
     },
-    //»ñÈ¡¼¯ºÏµÄ×Ó½Úµã
+    //è·å–é›†åˆçš„å­èŠ‚ç‚¹
     children: function(selector){
       return filtered(this.map(function(){
         return children(this);
       }), selector);
     },
-    //·µ»ØµÄ»¹ÊÇzepto¼¯ºÏ
+    //è¿”å›çš„è¿˜æ˜¯zeptoé›†åˆ
     contents: function() {
       return this.map(function() {
         return this.contentDocument || slice.call(this.childNodes);
       });
     },
-    //ÏÈ»ñÈ¡¸Ã½ÚµãµÄ¸¸½ÚµãÖĞµÄËùÓĞ×Ó½Úµã£¬ÔÙÅÅ³ı±¾Éí
+    //å…ˆè·å–è¯¥èŠ‚ç‚¹çš„çˆ¶èŠ‚ç‚¹ä¸­çš„æ‰€æœ‰å­èŠ‚ç‚¹ï¼Œå†æ’é™¤æœ¬èº«
     siblings: function(selector){
       return filtered(this.map(function(i, el){
         return filter.call(children(el.parentNode), function(child){
@@ -803,7 +803,7 @@ var Zepto = (function() {
       });
     },
     // `pluck` is borrowed from Prototype.js
-    //¸ù¾İÊôĞÔÀ´»ñÈ¡µ±Ç°¼¯ºÏµÄÏà¹Ø¼¯ºÏ
+    //æ ¹æ®å±æ€§æ¥è·å–å½“å‰é›†åˆçš„ç›¸å…³é›†åˆ
     pluck: function(property){
       return $.map(this, function(el){
         return el[property];
@@ -812,27 +812,27 @@ var Zepto = (function() {
 
     show: function(){
       return this.each(function(){
-        //Çå³ıÔªËØµÄÄÚÁªdisplay="none"µÄÑùÊ½
+        //æ¸…é™¤å…ƒç´ çš„å†…è”display="none"çš„æ ·å¼
         this.style.display == "none" && (this.style.display = '');
-        //µ±ÑùÊ½±íÀïµÄ¸ÃÔªËØµÄdisplayÑùÊ½ÎªnoneÊ±£¬ÉèÖÃËüµÄdisplayÎªÄ¬ÈÏÖµ
+        //å½“æ ·å¼è¡¨é‡Œçš„è¯¥å…ƒç´ çš„displayæ ·å¼ä¸ºnoneæ—¶ï¼Œè®¾ç½®å®ƒçš„displayä¸ºé»˜è®¤å€¼
         if (getComputedStyle(this, '').getPropertyValue("display") == "none") {
           this.style.display = defaultDisplay(this.nodeName);
         }
       })
     },
-    //½«ÒªÌæ»»µÄÄÚÈİ²åÈëµ½±»Ìæ»»µÄÄÚÈİÇ°Ãæ£¬È»ºóÉ¾³ı±»Ìæ»»µÄÄÚÈİ
+    //å°†è¦æ›¿æ¢çš„å†…å®¹æ’å…¥åˆ°è¢«æ›¿æ¢çš„å†…å®¹å‰é¢ï¼Œç„¶ååˆ é™¤è¢«æ›¿æ¢çš„å†…å®¹
     replaceWith: function(newContent){
       return this.before(newContent).remove();
     },
 
     wrap: function(structure){
       var func = isFunction(structure);
-      //Èç¹ûstructureÊÇ×Ö·û´®£¬Ôò½«Æä×ª³ÉDOM
+      //å¦‚æœstructureæ˜¯å­—ç¬¦ä¸²ï¼Œåˆ™å°†å…¶è½¬æˆDOM
       if (this[0] && !func) {
         var dom = $(structure).get(0),
             clone = dom.parentNode || this.length > 1;
       }
-      //Èç¹ûstructureÊÇÒÑ¾­´æÔÚÓÚÒ³ÃæÉÏµÄ½Úµã»òÕß±»wrapµÄ¼ÇÂ¼²»Ö»Ò»Ìõ£¬ÔòĞèÒªclone dom
+      //å¦‚æœstructureæ˜¯å·²ç»å­˜åœ¨äºé¡µé¢ä¸Šçš„èŠ‚ç‚¹æˆ–è€…è¢«wrapçš„è®°å½•ä¸åªä¸€æ¡ï¼Œåˆ™éœ€è¦clone dom
       return this.each(function(index){
         $(this).wrapAll(
           func ? structure.call(this, index) :
@@ -841,50 +841,50 @@ var Zepto = (function() {
       })
     },
     wrapAll: function(structure){
-      //½«Òª°ü¹üµÄÄÚÈİ²åÈëµ½µÚÒ»Ìõ¼ÇÂ¼µÄÇ°Ãæ£¬ËãÊÇ¸østructure¶¨Î»Î»ÖÃ
+      //å°†è¦åŒ…è£¹çš„å†…å®¹æ’å…¥åˆ°ç¬¬ä¸€æ¡è®°å½•çš„å‰é¢ï¼Œç®—æ˜¯ç»™structureå®šä½ä½ç½®
       if (this[0]) {
         $(this[0]).before(structure = $(structure));
         var children;
         // drill down to the inmost element
-        //È¡structureÀïµÄµÚÒ»¸ö×Ó½ÚµãµÄ×îÀï²ã
+        //å–structureé‡Œçš„ç¬¬ä¸€ä¸ªå­èŠ‚ç‚¹çš„æœ€é‡Œå±‚
         while ((children = structure.children()).length) {
           structure = children.first();
         }
-        //½«µ±Ç°¼¯ºÏ²åÈëµ½×îÀï²ãµÄ½ÚµãÀï£¬´ïµ½wrapAllµÄÄ¿µÄ
+        //å°†å½“å‰é›†åˆæ’å…¥åˆ°æœ€é‡Œå±‚çš„èŠ‚ç‚¹é‡Œï¼Œè¾¾åˆ°wrapAllçš„ç›®çš„
         $(structure).append(this);
       }
       return this;
     },
-    //ÔÚÆ¥ÅäÔªËØÀïµÄÄÚÈİÍâ°üÒ»²ã½á¹¹
+    //åœ¨åŒ¹é…å…ƒç´ é‡Œçš„å†…å®¹å¤–åŒ…ä¸€å±‚ç»“æ„
     wrapInner: function(structure){
       var func = isFunction(structure);
       return this.each(function(index){
-        //Ô­Àí¾ÍÊÇ»ñÈ¡½ÚµãµÄÄÚÈİ£¬È»ºóÓÃstructure½«ÄÚÈİ°üÆğÀ´£¬Èç¹ûÄÚÈİ²»´æÔÚ£¬ÔòÖ±½Ó½«structure appendµ½¸Ã½Úµã
+        //åŸç†å°±æ˜¯è·å–èŠ‚ç‚¹çš„å†…å®¹ï¼Œç„¶åç”¨structureå°†å†…å®¹åŒ…èµ·æ¥ï¼Œå¦‚æœå†…å®¹ä¸å­˜åœ¨ï¼Œåˆ™ç›´æ¥å°†structure appendåˆ°è¯¥èŠ‚ç‚¹
         var self = $(this), contents = self.contents(),
             dom  = func ? structure.call(this, index) : structure;
         contents.length ? contents.wrapAll(dom) : self.append(dom);
       })
     },
-    //ÓÃ×ÓÔªËØÌæ»»µô¸¸¼¶£¬¸¸ÔªËØ½ÚµãÉ¾³ı
+    //ç”¨å­å…ƒç´ æ›¿æ¢æ‰çˆ¶çº§ï¼Œçˆ¶å…ƒç´ èŠ‚ç‚¹åˆ é™¤
     unwrap: function(){
       this.parent().each(function(){
         $(this).replaceWith($(this).children());
       });
       return this;
     },
-    //¸´ÖÆ½Úµã
+    //å¤åˆ¶èŠ‚ç‚¹
     clone: function(){
       return this.map(function(){
         return this.cloneNode(true);
       });
     },
-    //Òş²Ø¼¯ºÏ
+    //éšè—é›†åˆ
     hide: function(){
       return this.css("display", "none");
     },
-    //Õâ¸ösettingÈ¡µÃ×÷ÓÃ¾ÍÊÇ¿ØÖÆÏÔÊ¾ÓëÒş²Ø£¬²¢²»ÇĞ»»£¬µ±ËüµÄÖµÎªtrueÊ±£¬Ò»Ö±ÏÔÊ¾£¬falseÊ±£¬Ò»Ö±Òş²Ø
-    //Õâ¸öµØ·½µÄÅĞ¶Ï¿´ÉÏÈ¥ÓĞµãÈÆ£¬ÆäÊµÒ²¼òµ¥£¬ÒâË¼ÊÇËµ£¬µ±²»¸øtoggle²ÎÊıÊ±£¬¸ù¾İÔªËØµÄdisplayÊÇ·ñµÈÓÚnoneÀ´¾ö¶¨ÏÔÊ¾»òÕßÒş²ØÔªËØ
-    //µ±¸øtoggle²ÎÊı£¬¾ÍÃ»ÓĞÇĞ»»Ğ§¹ûÁË£¬Ö»ÊÇ¼òµ¥µÄ¸ù¾İ²ÎÊıÖµÀ´¾ö¶¨ÏÔÊ¾»òÒş²Ø¡£Èç¹û²ÎÊıtrue,Ïàµ±ÓÚshow·½·¨£¬falseÔòÏàµ±ÓÚhide·½·¨
+    //è¿™ä¸ªsettingå–å¾—ä½œç”¨å°±æ˜¯æ§åˆ¶æ˜¾ç¤ºä¸éšè—ï¼Œå¹¶ä¸åˆ‡æ¢ï¼Œå½“å®ƒçš„å€¼ä¸ºtrueæ—¶ï¼Œä¸€ç›´æ˜¾ç¤ºï¼Œfalseæ—¶ï¼Œä¸€ç›´éšè—
+    //è¿™ä¸ªåœ°æ–¹çš„åˆ¤æ–­çœ‹ä¸Šå»æœ‰ç‚¹ç»•ï¼Œå…¶å®ä¹Ÿç®€å•ï¼Œæ„æ€æ˜¯è¯´ï¼Œå½“ä¸ç»™toggleå‚æ•°æ—¶ï¼Œæ ¹æ®å…ƒç´ çš„displayæ˜¯å¦ç­‰äºnoneæ¥å†³å®šæ˜¾ç¤ºæˆ–è€…éšè—å…ƒç´ 
+    //å½“ç»™toggleå‚æ•°ï¼Œå°±æ²¡æœ‰åˆ‡æ¢æ•ˆæœäº†ï¼Œåªæ˜¯ç®€å•çš„æ ¹æ®å‚æ•°å€¼æ¥å†³å®šæ˜¾ç¤ºæˆ–éšè—ã€‚å¦‚æœå‚æ•°true,ç›¸å½“äºshowæ–¹æ³•ï¼Œfalseåˆ™ç›¸å½“äºhideæ–¹æ³•
     toggle: function(setting){
       return this.each(function(){
         var el = $(this);
@@ -897,24 +897,24 @@ var Zepto = (function() {
     next: function(selector){
       return $(this.pluck('nextElementSibling')).filter(selector || '*');
     },
-    //µ±ÓĞ²ÎÊıÊ±£¬ÉèÖÃ¼¯ºÏÃ¿Ìõ¼ÇÂ¼µÄHTML£¬Ã»ÓĞ²ÎÊıÊ±£¬ÔòÎª»ñÈ¡¼¯ºÏµÚÒ»Ìõ¼ÇÂ¼µÄHTML£¬Èç¹û¼¯ºÏµÄ³¤¶ÈÎª0,Ôò·µ»Ønull
+    //å½“æœ‰å‚æ•°æ—¶ï¼Œè®¾ç½®é›†åˆæ¯æ¡è®°å½•çš„HTMLï¼Œæ²¡æœ‰å‚æ•°æ—¶ï¼Œåˆ™ä¸ºè·å–é›†åˆç¬¬ä¸€æ¡è®°å½•çš„HTMLï¼Œå¦‚æœé›†åˆçš„é•¿åº¦ä¸º0,åˆ™è¿”å›null
     html: function(html){
-      //²ÎÊıhtml²»´æÔÚÊ±£¬»ñÈ¡¼¯ºÏÖĞµÚÒ»Ìõ¼ÇÂ¼µÄhtml
-      //·ñÔò±éÀú¼¯ºÏ£¬ÉèÖÃÃ¿Ìõ¼ÇÂ¼µÄhtml
+      //å‚æ•°htmlä¸å­˜åœ¨æ—¶ï¼Œè·å–é›†åˆä¸­ç¬¬ä¸€æ¡è®°å½•çš„html
+      //å¦åˆ™éå†é›†åˆï¼Œè®¾ç½®æ¯æ¡è®°å½•çš„html
       return 0 in arguments ?
         this.each(function(idx){
-          //¼ÇÂ¼Ô­Ê¼µÄinnerHTML
+          //è®°å½•åŸå§‹çš„innerHTML
           var originHtml = this.innerHTML;
-          //Èç¹û²ÎÊıhtmlÊÇ×Ö·û´®Ö±½Ó²åÈëµ½¼ÇÂ¼ÖĞ£¬
-          //Èç¹ûÊÇº¯Êı£¬Ôò½«µ±Ç°¼ÇÂ¼×÷ÎªÉÏÏÂÎÄ£¬µ÷ÓÃ¸Ãº¯Êı£¬ÇÒ´«Èë¸Ã¼ÇÂ¼µÄË÷ÒıºÍÔ­Ê¼innerHTML×÷Îª²ÎÊı
+          //å¦‚æœå‚æ•°htmlæ˜¯å­—ç¬¦ä¸²ç›´æ¥æ’å…¥åˆ°è®°å½•ä¸­ï¼Œ
+          //å¦‚æœæ˜¯å‡½æ•°ï¼Œåˆ™å°†å½“å‰è®°å½•ä½œä¸ºä¸Šä¸‹æ–‡ï¼Œè°ƒç”¨è¯¥å‡½æ•°ï¼Œä¸”ä¼ å…¥è¯¥è®°å½•çš„ç´¢å¼•å’ŒåŸå§‹innerHTMLä½œä¸ºå‚æ•°
           $(this).empty().append( funcArg(this, html, idx, originHtml) );
         }) :
         (0 in this ? this[0].innerHTML : null);
     },
 
     text: function(text){
-      //Èç¹û²»¸ø¶¨text²ÎÊı£¬ÔòÎª»ñÈ¡¹¦ÄÜ£¬¼¯ºÏ³¤¶È´óÓÚ0Ê±£¬È¡µÚÒ»ÌõÊı¾İµÄtextContent£¬·ñÔò·µ»Ønull,
-      //Èç¹û¸ø¶¨text²ÎÊı£¬ÔòÎª¼¯ºÏµÄÃ¿Ò»ÌõÊı¾İÉèÖÃtextContentÎªtext
+      //å¦‚æœä¸ç»™å®štextå‚æ•°ï¼Œåˆ™ä¸ºè·å–åŠŸèƒ½ï¼Œé›†åˆé•¿åº¦å¤§äº0æ—¶ï¼Œå–ç¬¬ä¸€æ¡æ•°æ®çš„textContentï¼Œå¦åˆ™è¿”å›null,
+      //å¦‚æœç»™å®štextå‚æ•°ï¼Œåˆ™ä¸ºé›†åˆçš„æ¯ä¸€æ¡æ•°æ®è®¾ç½®textContentä¸ºtext
       return 0 in arguments ?
         this.each(function(idx){
           var newText = funcArg(this, text, idx, this.textContent);
@@ -924,26 +924,26 @@ var Zepto = (function() {
     },
     attr: function(name, value){
       var result;
-      //µ±Ö»ÓĞnameÇÒÎª×Ö·û´®Ê±£¬±íÊ¾»ñÈ¡µÚÒ»Ìõ¼ÇÂ¼µÄÊôĞÔ
+      //å½“åªæœ‰nameä¸”ä¸ºå­—ç¬¦ä¸²æ—¶ï¼Œè¡¨ç¤ºè·å–ç¬¬ä¸€æ¡è®°å½•çš„å±æ€§
       return (typeof name == 'string' && !(1 in arguments)) ?
-        //¼¯ºÏÃ»ÓĞ¼ÇÂ¼»òÕß¼¯ºÏµÄÔªËØ²»ÊÇnodeÀàĞÍ£¬·µ»Øundefined
+        //é›†åˆæ²¡æœ‰è®°å½•æˆ–è€…é›†åˆçš„å…ƒç´ ä¸æ˜¯nodeç±»å‹ï¼Œè¿”å›undefined
         (!this.length || this[0].nodeType !== 1 ? undefined :
-          //×¢ÒâÖ±½Ó¶¨ÒåÔÚnodeÉÏµÄÊôĞÔ£¬ÔÚ±ê×¼ä¯ÀÀÆ÷ºÍie9,10ÖĞÓÃgetAttributeÈ¡²»µ½,µÃµ½µÄ½á¹ûÊÇnull
-          //±ÈÈçdiv.aa = 10,ÓÃdiv.getAttribute('aa')µÃµ½µÄÊÇnull,ĞèÒªÓÃdiv.aa»òÕßdiv['aa']ÕâÑùÀ´È¡
+          //æ³¨æ„ç›´æ¥å®šä¹‰åœ¨nodeä¸Šçš„å±æ€§ï¼Œåœ¨æ ‡å‡†æµè§ˆå™¨å’Œie9,10ä¸­ç”¨getAttributeå–ä¸åˆ°,å¾—åˆ°çš„ç»“æœæ˜¯null
+          //æ¯”å¦‚div.aa = 10,ç”¨div.getAttribute('aa')å¾—åˆ°çš„æ˜¯null,éœ€è¦ç”¨div.aaæˆ–è€…div['aa']è¿™æ ·æ¥å–
           (!(result = this[0].getAttribute(name)) && name in this[0]) ? this[0][name] : result
         ) :
         this.each(function(idx){
           if (this.nodeType !== 1) {
             return;
           }
-          //Èç¹ûnameÊÇÒ»¸ö¶ÔÏó£¬Èç{'id':'test','value':11},Ôò¸øÊı¾İÉèÖÃÊôĞÔ
+          //å¦‚æœnameæ˜¯ä¸€ä¸ªå¯¹è±¡ï¼Œå¦‚{'id':'test','value':11},åˆ™ç»™æ•°æ®è®¾ç½®å±æ€§
           if (isObject(name)) {
             for (key in name) {
               setAttribute(this, key, name[key]);
             }
           }
-          //Èç¹ûnameÖ»ÊÇÒ»¸öÆÕÍ¨µÄÊôĞÔ×Ö·û´®£¬ÓÃfuncArgÀ´´¦ÀívalueÊÇÖµ»òÕßfunctionµÄÇé¿ö×îÖÕ·µ»ØÒ»¸öÊôĞÔÖµ
-          //Èç¹ûfuncArgº¯Êı·µ»ØµÄÊÇundefined»òÕßnull£¬ÔòÏàµ±ÓÚÉ¾³ıÔªËØµÄÊôĞÔ
+          //å¦‚æœnameåªæ˜¯ä¸€ä¸ªæ™®é€šçš„å±æ€§å­—ç¬¦ä¸²ï¼Œç”¨funcArgæ¥å¤„ç†valueæ˜¯å€¼æˆ–è€…functionçš„æƒ…å†µæœ€ç»ˆè¿”å›ä¸€ä¸ªå±æ€§å€¼
+          //å¦‚æœfuncArgå‡½æ•°è¿”å›çš„æ˜¯undefinedæˆ–è€…nullï¼Œåˆ™ç›¸å½“äºåˆ é™¤å…ƒç´ çš„å±æ€§
           else {
             setAttribute(this, name, funcArg(this, value, idx, this.getAttribute(name)));
           }
@@ -956,10 +956,10 @@ var Zepto = (function() {
         }, this);
       });
     },
-    //»ñÈ¡µÚÒ»ÌõÊı¾İµÄÖ¸¶¨µÄnameÊôĞÔ»òÕß¸øÃ¿ÌõÊı¾İÌí¼Ó×Ô¶¨ÒåÊôĞÔ£¬×¢ÒâºÍsetAttributeµÄÇø±ğ
+    //è·å–ç¬¬ä¸€æ¡æ•°æ®çš„æŒ‡å®šçš„nameå±æ€§æˆ–è€…ç»™æ¯æ¡æ•°æ®æ·»åŠ è‡ªå®šä¹‰å±æ€§ï¼Œæ³¨æ„å’ŒsetAttributeçš„åŒºåˆ«
     prop: function(name, value){
       name = propMap[name] || name;
-      //Ã»ÓĞ¸ø¶¨valueÊ±£¬Îª»ñÈ¡£¬¸ø¶¨valueÔò¸øÃ¿Ò»ÌõÊı¾İÌí¼Ó£¬value¿ÉÒÔÎªÖµÒ²¿ÉÒÔÊÇÒ»¸ö·µ»ØÖµµÄº¯Êı
+      //æ²¡æœ‰ç»™å®švalueæ—¶ï¼Œä¸ºè·å–ï¼Œç»™å®švalueåˆ™ç»™æ¯ä¸€æ¡æ•°æ®æ·»åŠ ï¼Œvalueå¯ä»¥ä¸ºå€¼ä¹Ÿå¯ä»¥æ˜¯ä¸€ä¸ªè¿”å›å€¼çš„å‡½æ•°
       return (1 in arguments) ?
         this.each(function(idx){
           this[name] = funcArg(this, value, idx, this[name]);
@@ -968,7 +968,7 @@ var Zepto = (function() {
     },
     data: function(name, value){
       var attrName = 'data-' + name.replace(capitalRE, '-$1').toLowerCase();
-      //Í¨¹ıµ÷ÓÃattr·½·¨À´ÊµÏÖ»ñÈ¡ÓëÉèÖÃµÄĞ§¹û£¬×¢Òâattr·½·¨Àï£¬µ±value´æÔÚµÄÊ±ºò£¬·µ»ØµÄÊÇ¼¯ºÏ±¾Éí£¬Èç¹û²»´æÔÚ£¬ÔòÊÇ·µ»Ø»ñÈ¡µÄÖµ
+      //é€šè¿‡è°ƒç”¨attræ–¹æ³•æ¥å®ç°è·å–ä¸è®¾ç½®çš„æ•ˆæœï¼Œæ³¨æ„attræ–¹æ³•é‡Œï¼Œå½“valueå­˜åœ¨çš„æ—¶å€™ï¼Œè¿”å›çš„æ˜¯é›†åˆæœ¬èº«ï¼Œå¦‚æœä¸å­˜åœ¨ï¼Œåˆ™æ˜¯è¿”å›è·å–çš„å€¼
       var data = (1 in arguments) ?
         this.attr(attrName, value) :
         this.attr(attrName);
@@ -981,7 +981,7 @@ var Zepto = (function() {
           this.value = funcArg(this, value, idx, this.value);
         }) :
         (this[0] && (this[0].multiple ?
-        //Èç¹ûÊÇ¶àÑ¡µÄselect£¬Ôò·µ»ØÒ»¸ö°üº¬±»Ñ¡ÖĞµÄoptionµÄÖµµÄÊı×é
+        //å¦‚æœæ˜¯å¤šé€‰çš„selectï¼Œåˆ™è¿”å›ä¸€ä¸ªåŒ…å«è¢«é€‰ä¸­çš„optionçš„å€¼çš„æ•°ç»„
            $(this[0]).find('option').filter(function(){
              return this.selected;
            }).pluck('value') :
@@ -992,23 +992,23 @@ var Zepto = (function() {
       if (coordinates) {
         return this.each(function(index){
           var $this = $(this),
-              //coordinatesÎª{}Ê±Ö±½Ó·µ»Ø£¬Îªº¯ÊıÊ±·µ»Ø´¦Àí½á¹û¸øcoords
+              //coordinatesä¸º{}æ—¶ç›´æ¥è¿”å›ï¼Œä¸ºå‡½æ•°æ—¶è¿”å›å¤„ç†ç»“æœç»™coords
               coords = funcArg(this, coordinates, index, $this.offset()),
-              //È¡¸¸¼¶µÄoffset
+              //å–çˆ¶çº§çš„offset
               parentOffset = $this.offsetParent().offset(),
-              //¼ÆËã³öËüÃÇÖ®¼äµÄ²î£¬µÃ³öÆäÆ«ÒÆÁ¿
+              //è®¡ç®—å‡ºå®ƒä»¬ä¹‹é—´çš„å·®ï¼Œå¾—å‡ºå…¶åç§»é‡
               props = {
                 top:  coords.top  - parentOffset.top,
                 left: coords.left - parentOffset.left
               };
-          //×¢ÒâÔªËØµÄpositionÎªstaticÊ±£¬ÉèÖÃtop,leftÊÇÎŞĞ§µÄ
+          //æ³¨æ„å…ƒç´ çš„positionä¸ºstaticæ—¶ï¼Œè®¾ç½®top,leftæ˜¯æ— æ•ˆçš„
           if ($this.css('position') == 'static') {
             props['position'] = 'relative';
           }
           $this.css(props);
         })
       }
-      //È¡µÚÒ»Ìõ¼ÇÂ¼µÄoffset,°üÀ¨offsetTop,offsetLeft,offsetWidth,offsetHeight
+      //å–ç¬¬ä¸€æ¡è®°å½•çš„offset,åŒ…æ‹¬offsetTop,offsetLeft,offsetWidth,offsetHeight
       if (!this.length) {
         return null;
       }
@@ -1016,7 +1016,7 @@ var Zepto = (function() {
         return {top: 0, left: 0};
       }
       var obj = this[0].getBoundingClientRect();
-      //window.pageYOffset¾ÍÊÇÀàËÆMath.max(document.documentElement.scrollTop||document.body.scrollTop)
+      //window.pageYOffsetå°±æ˜¯ç±»ä¼¼Math.max(document.documentElement.scrollTop||document.body.scrollTop)
       return {
         left: obj.left + window.pageXOffset,
         top: obj.top + window.pageYOffset,
@@ -1025,7 +1025,7 @@ var Zepto = (function() {
       }
     },
     css: function(property, value){
-      //»ñÈ¡Ö¸¶¨µÄÑùÊ½
+      //è·å–æŒ‡å®šçš„æ ·å¼
       if (arguments.length < 2) {
         var computedStyle, element = this[0];
         if(!element) {
@@ -1043,20 +1043,20 @@ var Zepto = (function() {
           return props;
         }
       }
-      //ÉèÖÃÑùÊ½
+      //è®¾ç½®æ ·å¼
       var css = '';
       if (type(property) == 'string') {
-        if (!value && value !== 0) //µ±valueµÄÖµÎª·ÇÁãµÄ¿ÉÒÔ×ª³ÉfalseµÄÖµÊ±Èç(null,undefined)£¬É¾µôpropertyÑùÊ½
+        if (!value && value !== 0) //å½“valueçš„å€¼ä¸ºéé›¶çš„å¯ä»¥è½¬æˆfalseçš„å€¼æ—¶å¦‚(null,undefined)ï¼Œåˆ æ‰propertyæ ·å¼
           this.each(function(){
-            this.style.removeProperty(dasherize(property));//style.removeProperty ÒÆ³ıÖ¸¶¨µÄCSSÑùÊ½Ãû(IE²»Ö§³ÖDOMµÄstyle·½·¨)
+            this.style.removeProperty(dasherize(property));//style.removeProperty ç§»é™¤æŒ‡å®šçš„CSSæ ·å¼å(IEä¸æ”¯æŒDOMçš„styleæ–¹æ³•)
           });
         else {
           css = dasherize(property) + ":" + maybeAddPx(property, value);
         }
       } else {
-        //µ±propertyÊÇ¶ÔÏóÊ±
+        //å½“propertyæ˜¯å¯¹è±¡æ—¶
         for (key in property) {
-          if (!property[key] && property[key] !== 0) {//µ±property[key]µÄÖµÎª·ÇÁãµÄ¿ÉÒÔ×ª³ÉfalseµÄÖµÊ±£¬É¾µôkeyÑùÊ½
+          if (!property[key] && property[key] !== 0) {//å½“property[key]çš„å€¼ä¸ºéé›¶çš„å¯ä»¥è½¬æˆfalseçš„å€¼æ—¶ï¼Œåˆ æ‰keyæ ·å¼
             this.each(function(){
               this.style.removeProperty(dasherize(key));
             });
@@ -1066,14 +1066,14 @@ var Zepto = (function() {
           }
         }
       }
-      //ÉèÖÃ
+      //è®¾ç½®
       return this.each(function(){
         this.style.cssText += ';' + css;
       });
     },
-    //ÕâÀïµÄ$(element)[0]ÊÇÎªÁË½«×Ö·û´®×ª³Énode,ÒòÎªthisÊÇ¸ö°üº¬nodeµÄÊı×é
-    //µ±²»Ö¸¶¨elementÊ±£¬È¡¼¯ºÏÖĞµÚÒ»Ìõ¼ÇÂ¼ÔÚÆä¸¸½ÚµãµÄÎ»ÖÃ
-    //this.parent().children().indexOf(this[0])Õâ¾äºÜÇÉÃî£¬ºÍÈ¡µÚÒ»¼ÇÂ¼µÄparent().children().indexOf(this)ÏàÍ¬
+    //è¿™é‡Œçš„$(element)[0]æ˜¯ä¸ºäº†å°†å­—ç¬¦ä¸²è½¬æˆnode,å› ä¸ºthisæ˜¯ä¸ªåŒ…å«nodeçš„æ•°ç»„
+    //å½“ä¸æŒ‡å®šelementæ—¶ï¼Œå–é›†åˆä¸­ç¬¬ä¸€æ¡è®°å½•åœ¨å…¶çˆ¶èŠ‚ç‚¹çš„ä½ç½®
+    //this.parent().children().indexOf(this[0])è¿™å¥å¾ˆå·§å¦™ï¼Œå’Œå–ç¬¬ä¸€è®°å½•çš„parent().children().indexOf(this)ç›¸åŒ
     index: function(element){
       return element ? this.indexOf($(element)[0]) : this.parent().children().indexOf(this[0]);
     },
@@ -1082,7 +1082,7 @@ var Zepto = (function() {
         return false;
       }
       return emptyArray.some.call(this, function(el){
-        //×¢ÒâÕâÀïµÄthisÊÇclassRE(name)Éú³ÉµÄÕıÔò
+        //æ³¨æ„è¿™é‡Œçš„thisæ˜¯classRE(name)ç”Ÿæˆçš„æ­£åˆ™
         return this.test(className(el));
       }, classRE(name));
     },
@@ -1091,12 +1091,12 @@ var Zepto = (function() {
         return this;
       }
       return this.each(function(idx){
-        //thisÎªnode
+        //thisä¸ºnode
         if (!('className' in this)) {
           return;
         }
         classList = [];
-        //´¦ÀíÍ¬Ê±¶à¸öÀàµÄÇé¿ö£¬ÓÃ¿Õ¸ñ·Ö¿ª
+        //å¤„ç†åŒæ—¶å¤šä¸ªç±»çš„æƒ…å†µï¼Œç”¨ç©ºæ ¼åˆ†å¼€
         var cls = className(this), newName = funcArg(this, name, idx, cls);
         newName.split(/\s+/g).forEach(function(klass){
           if (!$(this).hasClass(klass)) {
@@ -1111,7 +1111,7 @@ var Zepto = (function() {
         if (!('className' in this)) {
           return;
         }
-        //Î´¸øname£¬ÔòÇå¿Õclass
+        //æœªç»™nameï¼Œåˆ™æ¸…ç©ºclass
         if (name === undefined) {
           return className(this, '');
         }
@@ -1166,7 +1166,7 @@ var Zepto = (function() {
           this.scrollTo(value, this.scrollY);
         });
     },
-    //µÃµ½position
+    //å¾—åˆ°position
     position: function() {
       if (!this.length) {
         return;
@@ -1210,9 +1210,9 @@ var Zepto = (function() {
   $.fn.detach = $.fn.remove;
 
   // Generate the `width` and `height` functions
-  //µ÷ÓÃoffset»ñÈ¡width£¬height
+  //è°ƒç”¨offsetè·å–widthï¼Œheight
   ['width', 'height'].forEach(function(dimension){
-    //½«width,hegiht×ª³ÉWidth,Height£¬ÓÃÓÚÈ¡window»òÕßdocumentµÄwidthºÍheight
+    //å°†width,hegihtè½¬æˆWidth,Heightï¼Œç”¨äºå–windowæˆ–è€…documentçš„widthå’Œheight
     var dimensionProperty =
       dimension.replace(/./, function(m){
         return m[0].toUpperCase();
@@ -1234,7 +1234,7 @@ var Zepto = (function() {
     };
   });
 
-  //±éÀú½Úµã¼°Æä×ÓËï½Úµã
+  //éå†èŠ‚ç‚¹åŠå…¶å­å­™èŠ‚ç‚¹
   function traverseNode(node, fun) {
     fun(node);
     for (var i = 0, len = node.childNodes.length; i < len; i++) {
@@ -1245,7 +1245,7 @@ var Zepto = (function() {
   // Generate the `after`, `prepend`, `before`, `append`,
   // `insertAfter`, `insertBefore`, `appendTo`, and `prependTo` methods.
   adjacencyOperators.forEach(function(operator, operatorIndex) {
-    var inside = operatorIndex % 2; //=> prepend, append£¬ÔÚÔªËØÄÚ²¿²Ù×÷,insideÎª1£¬Íâ²¿²Ù×÷Îª0
+    var inside = operatorIndex % 2; //=> prepend, appendï¼Œåœ¨å…ƒç´ å†…éƒ¨æ“ä½œ,insideä¸º1ï¼Œå¤–éƒ¨æ“ä½œä¸º0
 
     $.fn[operator] = function(){
       // arguments can be nodes, arrays of nodes, Zepto objects and HTML strings
@@ -1263,7 +1263,7 @@ var Zepto = (function() {
         parent = inside ? target : target.parentNode;
 
         // convert all methods to a "before" operation
-        //Í¨¹ı¸Ä±ätarget½«after£¬prepend£¬append²Ù×÷×ª³Ébefore²Ù×÷£¬insertBeforeµÄµÚ¶ş¸ö²ÎÊıÎªnullÊ±µÈÓÚappendChild²Ù×÷
+        //é€šè¿‡æ”¹å˜targetå°†afterï¼Œprependï¼Œappendæ“ä½œè½¬æˆbeforeæ“ä½œï¼ŒinsertBeforeçš„ç¬¬äºŒä¸ªå‚æ•°ä¸ºnullæ—¶ç­‰äºappendChildæ“ä½œ
         target = operatorIndex == 0 ? target.nextSibling :
                  operatorIndex == 1 ? target.firstChild :
                  operatorIndex == 2 ? target :
@@ -1280,7 +1280,7 @@ var Zepto = (function() {
           }
 
           parent.insertBefore(node, target);
-          //²åÈë½Úµãºó£¬Èç¹û±»²åÈëµÄ½ÚµãÊÇSCRIPT£¬ÔòÖ´ĞĞÀïÃæµÄÄÚÈİ²¢½«windowÉèÎªÉÏÏÂÎÄ
+          //æ’å…¥èŠ‚ç‚¹åï¼Œå¦‚æœè¢«æ’å…¥çš„èŠ‚ç‚¹æ˜¯SCRIPTï¼Œåˆ™æ‰§è¡Œé‡Œé¢çš„å†…å®¹å¹¶å°†windowè®¾ä¸ºä¸Šä¸‹æ–‡
           if (parentInDocument) {
             traverseNode(node, function(el){
               if (el.nodeName != null && el.nodeName.toUpperCase() === 'SCRIPT' &&
