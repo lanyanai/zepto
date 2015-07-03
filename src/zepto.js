@@ -439,7 +439,7 @@ var Zepto = (function() {
     if (value === undefined) {
       return svg ? klass.baseVal : klass;
     }
-    svg ? (klass.baseVal = value) : (node.className = value)
+    svg ? (klass.baseVal = value) : (node.className = value);
   }
 
   // "true"  => true
@@ -903,80 +903,120 @@ var Zepto = (function() {
       //否则遍历集合，设置每条记录的html
       return 0 in arguments ?
         this.each(function(idx){
+          //记录原始的innerHTML
           var originHtml = this.innerHTML;
+          //如果参数html是字符串直接插入到记录中，
+          //如果是函数，则将当前记录作为上下文，调用该函数，且传入该记录的索引和原始innerHTML作为参数
           $(this).empty().append( funcArg(this, html, idx, originHtml) );
         }) :
-        (0 in this ? this[0].innerHTML : null)
+        (0 in this ? this[0].innerHTML : null);
     },
+
     text: function(text){
+      //如果不给定text参数，则为获取功能，集合长度大于0时，取第一条数据的textContent，否则返回null,
+      //如果给定text参数，则为集合的每一条数据设置textContent为text
       return 0 in arguments ?
         this.each(function(idx){
-          var newText = funcArg(this, text, idx, this.textContent)
+          var newText = funcArg(this, text, idx, this.textContent);
           this.textContent = newText == null ? '' : ''+newText
         }) :
-        (0 in this ? this[0].textContent : null)
+        (0 in this ? this[0].textContent : null);
     },
     attr: function(name, value){
-      var result
+      var result;
+      //当只有name且为字符串时，表示获取第一条记录的属性
       return (typeof name == 'string' && !(1 in arguments)) ?
+        //集合没有记录或者集合的元素不是node类型，返回undefined
         (!this.length || this[0].nodeType !== 1 ? undefined :
+          //注意直接定义在node上的属性，在标准浏览器和ie9,10中用getAttribute取不到,得到的结果是null
+          //比如div.aa = 10,用div.getAttribute('aa')得到的是null,需要用div.aa或者div['aa']这样来取
           (!(result = this[0].getAttribute(name)) && name in this[0]) ? this[0][name] : result
         ) :
         this.each(function(idx){
-          if (this.nodeType !== 1) return
-          if (isObject(name)) for (key in name) setAttribute(this, key, name[key])
-          else setAttribute(this, name, funcArg(this, value, idx, this.getAttribute(name)))
+          if (this.nodeType !== 1) {
+            return;
+          }
+          //如果name是一个对象，如{'id':'test','value':11},则给数据设置属性
+          if (isObject(name)) {
+            for (key in name) {
+              setAttribute(this, key, name[key]);
+            }
+          }
+          //如果name只是一个普通的属性字符串，用funcArg来处理value是值或者function的情况最终返回一个属性值
+          //如果funcArg函数返回的是undefined或者null，则相当于删除元素的属性
+          else {
+            setAttribute(this, name, funcArg(this, value, idx, this.getAttribute(name)));
+          }
         })
     },
     removeAttr: function(name){
-      return this.each(function(){ this.nodeType === 1 && name.split(' ').forEach(function(attribute){
-        setAttribute(this, attribute)
-      }, this)})
+      return this.each(function(){
+        this.nodeType === 1 && name.split(' ').forEach(function(attribute){
+          setAttribute(this, attribute);
+        }, this);
+      });
     },
+    //获取第一条数据的指定的name属性或者给每条数据添加自定义属性，注意和setAttribute的区别
     prop: function(name, value){
-      name = propMap[name] || name
+      name = propMap[name] || name;
+      //没有给定value时，为获取，给定value则给每一条数据添加，value可以为值也可以是一个返回值的函数
       return (1 in arguments) ?
         this.each(function(idx){
-          this[name] = funcArg(this, value, idx, this[name])
+          this[name] = funcArg(this, value, idx, this[name]);
         }) :
-        (this[0] && this[0][name])
+        (this[0] && this[0][name]);
     },
     data: function(name, value){
-      var attrName = 'data-' + name.replace(capitalRE, '-$1').toLowerCase()
-
+      var attrName = 'data-' + name.replace(capitalRE, '-$1').toLowerCase();
+      //通过调用attr方法来实现获取与设置的效果，注意attr方法里，当value存在的时候，返回的是集合本身，如果不存在，则是返回获取的值
       var data = (1 in arguments) ?
         this.attr(attrName, value) :
-        this.attr(attrName)
+        this.attr(attrName);
 
-      return data !== null ? deserializeValue(data) : undefined
+      return data !== null ? deserializeValue(data) : undefined;
     },
     val: function(value){
       return 0 in arguments ?
         this.each(function(idx){
-          this.value = funcArg(this, value, idx, this.value)
+          this.value = funcArg(this, value, idx, this.value);
         }) :
         (this[0] && (this[0].multiple ?
-           $(this[0]).find('option').filter(function(){ return this.selected }).pluck('value') :
+        //如果是多选的select，则返回一个包含被选中的option的值的数组
+           $(this[0]).find('option').filter(function(){
+             return this.selected;
+           }).pluck('value') :
            this[0].value)
-        )
+        );
     },
     offset: function(coordinates){
-      if (coordinates) return this.each(function(index){
-        var $this = $(this),
-            coords = funcArg(this, coordinates, index, $this.offset()),
-            parentOffset = $this.offsetParent().offset(),
-            props = {
-              top:  coords.top  - parentOffset.top,
-              left: coords.left - parentOffset.left
-            }
-
-        if ($this.css('position') == 'static') props['position'] = 'relative'
-        $this.css(props)
-      })
-      if (!this.length) return null
-      if (!$.contains(document.documentElement, this[0]))
-        return {top: 0, left: 0}
-      var obj = this[0].getBoundingClientRect()
+      if (coordinates) {
+        return this.each(function(index){
+          var $this = $(this),
+              //coordinates为{}时直接返回，为函数时返回处理结果给coords
+              coords = funcArg(this, coordinates, index, $this.offset()),
+              //取父级的offset
+              parentOffset = $this.offsetParent().offset(),
+              //计算出它们之间的差，得出其偏移量
+              props = {
+                top:  coords.top  - parentOffset.top,
+                left: coords.left - parentOffset.left
+              };
+          //注意元素的position为static时，设置top,left是无效的
+          if ($this.css('position') == 'static') {
+            props['position'] = 'relative';
+          }
+          $this.css(props);
+        })
+      }
+      //取第一条记录的offset,包括offsetTop,offsetLeft,offsetWidth,offsetHeight
+      if (!this.length) {
+        return null;
+      }
+      if (!$.contains(document.documentElement, this[0])) {
+        return {top: 0, left: 0};
+      }
+      var obj = this[0].getBoundingClientRect();
+      //window.pageYOffset就是类似Math.max(document.documentElement.scrollTop||document.body.scrollTop)
       return {
         left: obj.left + window.pageXOffset,
         top: obj.top + window.pageYOffset,
@@ -985,114 +1025,169 @@ var Zepto = (function() {
       }
     },
     css: function(property, value){
+      //获取指定的样式
       if (arguments.length < 2) {
-        var computedStyle, element = this[0]
-        if(!element) return
-        computedStyle = getComputedStyle(element, '')
-        if (typeof property == 'string')
-          return element.style[camelize(property)] || computedStyle.getPropertyValue(property)
+        var computedStyle, element = this[0];
+        if(!element) {
+          return;
+        }
+        computedStyle = getComputedStyle(element, '');
+        if (typeof property == 'string') {
+          return element.style[camelize(property)] || computedStyle.getPropertyValue(property);
+        }
         else if (isArray(property)) {
-          var props = {}
+          var props = {};
           $.each(property, function(_, prop){
-            props[prop] = (element.style[camelize(prop)] || computedStyle.getPropertyValue(prop))
-          })
-          return props
+            props[prop] = (element.style[camelize(prop)] || computedStyle.getPropertyValue(prop));
+          });
+          return props;
         }
       }
-
-      var css = ''
+      //设置样式
+      var css = '';
       if (type(property) == 'string') {
-        if (!value && value !== 0)
-          this.each(function(){ this.style.removeProperty(dasherize(property)) })
-        else
-          css = dasherize(property) + ":" + maybeAddPx(property, value)
+        if (!value && value !== 0) //当value的值为非零的可以转成false的值时如(null,undefined)，删掉property样式
+          this.each(function(){
+            this.style.removeProperty(dasherize(property));//style.removeProperty 移除指定的CSS样式名(IE不支持DOM的style方法)
+          });
+        else {
+          css = dasherize(property) + ":" + maybeAddPx(property, value);
+        }
       } else {
-        for (key in property)
-          if (!property[key] && property[key] !== 0)
-            this.each(function(){ this.style.removeProperty(dasherize(key)) })
-          else
+        //当property是对象时
+        for (key in property) {
+          if (!property[key] && property[key] !== 0) {//当property[key]的值为非零的可以转成false的值时，删掉key样式
+            this.each(function(){
+              this.style.removeProperty(dasherize(key));
+            });
+          }
+          else {
             css += dasherize(key) + ':' + maybeAddPx(key, property[key]) + ';'
+          }
+        }
       }
-
-      return this.each(function(){ this.style.cssText += ';' + css })
+      //设置
+      return this.each(function(){
+        this.style.cssText += ';' + css;
+      });
     },
+    //这里的$(element)[0]是为了将字符串转成node,因为this是个包含node的数组
+    //当不指定element时，取集合中第一条记录在其父节点的位置
+    //this.parent().children().indexOf(this[0])这句很巧妙，和取第一记录的parent().children().indexOf(this)相同
     index: function(element){
-      return element ? this.indexOf($(element)[0]) : this.parent().children().indexOf(this[0])
+      return element ? this.indexOf($(element)[0]) : this.parent().children().indexOf(this[0]);
     },
     hasClass: function(name){
-      if (!name) return false
+      if (!name) {
+        return false;
+      }
       return emptyArray.some.call(this, function(el){
-        return this.test(className(el))
-      }, classRE(name))
+        //注意这里的this是classRE(name)生成的正则
+        return this.test(className(el));
+      }, classRE(name));
     },
     addClass: function(name){
-      if (!name) return this
+      if (!name) {
+        return this;
+      }
       return this.each(function(idx){
-        if (!('className' in this)) return
-        classList = []
-        var cls = className(this), newName = funcArg(this, name, idx, cls)
+        //this为node
+        if (!('className' in this)) {
+          return;
+        }
+        classList = [];
+        //处理同时多个类的情况，用空格分开
+        var cls = className(this), newName = funcArg(this, name, idx, cls);
         newName.split(/\s+/g).forEach(function(klass){
-          if (!$(this).hasClass(klass)) classList.push(klass)
-        }, this)
-        classList.length && className(this, cls + (cls ? " " : "") + classList.join(" "))
-      })
+          if (!$(this).hasClass(klass)) {
+            classList.push(klass);
+          }
+        }, this);
+        classList.length && className(this, cls + (cls ? " " : "") + classList.join(" "));
+      });
     },
     removeClass: function(name){
       return this.each(function(idx){
-        if (!('className' in this)) return
-        if (name === undefined) return className(this, '')
-        classList = className(this)
+        if (!('className' in this)) {
+          return;
+        }
+        //未给name，则清空class
+        if (name === undefined) {
+          return className(this, '');
+        }
+        classList = className(this);
         funcArg(this, name, idx, classList).split(/\s+/g).forEach(function(klass){
-          classList = classList.replace(classRE(klass), " ")
-        })
-        className(this, classList.trim())
+          classList = classList.replace(classRE(klass), " ");
+        });
+        className(this, classList.trim());
       })
     },
     toggleClass: function(name, when){
-      if (!name) return this
+      if (!name) {
+        return this;
+      }
       return this.each(function(idx){
-        var $this = $(this), names = funcArg(this, name, idx, className(this))
+        var $this = $(this), names = funcArg(this, name, idx, className(this));
         names.split(/\s+/g).forEach(function(klass){
           (when === undefined ? !$this.hasClass(klass) : when) ?
-            $this.addClass(klass) : $this.removeClass(klass)
-        })
+            $this.addClass(klass) : $this.removeClass(klass);
+        });
       })
     },
     scrollTop: function(value){
-      if (!this.length) return
-      var hasScrollTop = 'scrollTop' in this[0]
-      if (value === undefined) return hasScrollTop ? this[0].scrollTop : this[0].pageYOffset
+      if (!this.length) {
+        return;
+      }
+      var hasScrollTop = 'scrollTop' in this[0];
+      if (value === undefined) {
+        return hasScrollTop ? this[0].scrollTop : this[0].pageYOffset;
+      }
       return this.each(hasScrollTop ?
-        function(){ this.scrollTop = value } :
-        function(){ this.scrollTo(this.scrollX, value) })
+        function(){
+          this.scrollTop = value;
+        } :
+        function(){
+          this.scrollTo(this.scrollX, value);
+        });
     },
     scrollLeft: function(value){
-      if (!this.length) return
-      var hasScrollLeft = 'scrollLeft' in this[0]
-      if (value === undefined) return hasScrollLeft ? this[0].scrollLeft : this[0].pageXOffset
+      if (!this.length) {
+        return;
+      }
+      var hasScrollLeft = 'scrollLeft' in this[0];
+      if (value === undefined) {
+        return hasScrollLeft ? this[0].scrollLeft : this[0].pageXOffset;
+      }
       return this.each(hasScrollLeft ?
-        function(){ this.scrollLeft = value } :
-        function(){ this.scrollTo(value, this.scrollY) })
+        function(){
+          this.scrollLeft = value;
+        } :
+        function(){
+          this.scrollTo(value, this.scrollY);
+        });
     },
+    //得到position
     position: function() {
-      if (!this.length) return
+      if (!this.length) {
+        return;
+      }
 
       var elem = this[0],
         // Get *real* offsetParent
         offsetParent = this.offsetParent(),
         // Get correct offsets
-        offset       = this.offset(),
-        parentOffset = rootNodeRE.test(offsetParent[0].nodeName) ? { top: 0, left: 0 } : offsetParent.offset()
+        offset = this.offset(),
+        parentOffset = rootNodeRE.test(offsetParent[0].nodeName) ? { top: 0, left: 0 } : offsetParent.offset();
 
       // Subtract element margins
       // note: when an element has margin: auto the offsetLeft and marginLeft
       // are the same in Safari causing offset.left to incorrectly be 0
-      offset.top  -= parseFloat( $(elem).css('margin-top') ) || 0
-      offset.left -= parseFloat( $(elem).css('margin-left') ) || 0
+      offset.top  -= parseFloat( $(elem).css('margin-top') ) || 0;
+      offset.left -= parseFloat( $(elem).css('margin-left') ) || 0;
 
       // Add offsetParent borders
-      parentOffset.top  += parseFloat( $(offsetParent[0]).css('border-top-width') ) || 0
-      parentOffset.left += parseFloat( $(offsetParent[0]).css('border-left-width') ) || 0
+      parentOffset.top  += parseFloat( $(offsetParent[0]).css('border-top-width') ) || 0;
+      parentOffset.left += parseFloat( $(offsetParent[0]).css('border-left-width') ) || 0;
 
       // Subtract the two offsets
       return {
@@ -1102,89 +1197,111 @@ var Zepto = (function() {
     },
     offsetParent: function() {
       return this.map(function(){
-        var parent = this.offsetParent || document.body
-        while (parent && !rootNodeRE.test(parent.nodeName) && $(parent).css("position") == "static")
-          parent = parent.offsetParent
-        return parent
+        var parent = this.offsetParent || document.body;
+        while (parent && !rootNodeRE.test(parent.nodeName) && $(parent).css("position") == "static") {
+          parent = parent.offsetParent;
+        }
+        return parent;
       })
     }
-  }
+  };
 
   // for now
   $.fn.detach = $.fn.remove;
 
   // Generate the `width` and `height` functions
-  ;['width', 'height'].forEach(function(dimension){
+  //调用offset获取width，height
+  ['width', 'height'].forEach(function(dimension){
+    //将width,hegiht转成Width,Height，用于取window或者document的width和height
     var dimensionProperty =
-      dimension.replace(/./, function(m){ return m[0].toUpperCase() })
+      dimension.replace(/./, function(m){
+        return m[0].toUpperCase();
+      });
 
     $.fn[dimension] = function(value){
-      var offset, el = this[0]
-      if (value === undefined) return isWindow(el) ? el['inner' + dimensionProperty] :
-        isDocument(el) ? el.documentElement['scroll' + dimensionProperty] :
-        (offset = this.offset()) && offset[dimension]
-      else return this.each(function(idx){
-        el = $(this)
-        el.css(dimension, funcArg(this, value, idx, el[dimension]()))
-      })
-    }
-  })
+      var offset, el = this[0];
+      if (value === undefined) {
+        return isWindow(el) ? el['inner' + dimensionProperty] :
+            isDocument(el) ? el.documentElement['scroll' + dimensionProperty] :
+            (offset = this.offset()) && offset[dimension];
+      }
+      else {
+        return this.each(function(idx){
+          el = $(this);
+          el.css(dimension, funcArg(this, value, idx, el[dimension]()));
+        });
+      }
+    };
+  });
 
+  //遍历节点及其子孙节点
   function traverseNode(node, fun) {
-    fun(node)
-    for (var i = 0, len = node.childNodes.length; i < len; i++)
-      traverseNode(node.childNodes[i], fun)
+    fun(node);
+    for (var i = 0, len = node.childNodes.length; i < len; i++) {
+      traverseNode(node.childNodes[i], fun);
+    }
   }
 
   // Generate the `after`, `prepend`, `before`, `append`,
   // `insertAfter`, `insertBefore`, `appendTo`, and `prependTo` methods.
   adjacencyOperators.forEach(function(operator, operatorIndex) {
-    var inside = operatorIndex % 2; //=> prepend, append
+    var inside = operatorIndex % 2; //=> prepend, append，在元素内部操作,inside为1，外部操作为0
 
     $.fn[operator] = function(){
       // arguments can be nodes, arrays of nodes, Zepto objects and HTML strings
       var argType, nodes = $.map(arguments, function(arg) {
             argType = type(arg);
             return argType == "object" || argType == "array" || arg == null ?
-              arg : zepto.fragment(arg)
+              arg : zepto.fragment(arg);
           }),
-          parent, copyByClone = this.length > 1
-      if (nodes.length < 1) return this
+          parent, copyByClone = this.length > 1;
+      if (nodes.length < 1) {
+        return this;
+      }
 
       return this.each(function(_, target){
-        parent = inside ? target : target.parentNode
+        parent = inside ? target : target.parentNode;
 
         // convert all methods to a "before" operation
+        //通过改变target将after，prepend，append操作转成before操作，insertBefore的第二个参数为null时等于appendChild操作
         target = operatorIndex == 0 ? target.nextSibling :
                  operatorIndex == 1 ? target.firstChild :
                  operatorIndex == 2 ? target :
-                 null
+                 null;
 
-        var parentInDocument = $.contains(document.documentElement, parent)
+        var parentInDocument = $.contains(document.documentElement, parent);
 
         nodes.forEach(function(node){
-          if (copyByClone) node = node.cloneNode(true)
-          else if (!parent) return $(node).remove()
+          if (copyByClone) {
+            node = node.cloneNode(true);
+          }
+          else if (!parent) {
+            return $(node).remove();
+          }
 
-          parent.insertBefore(node, target)
-          if (parentInDocument) traverseNode(node, function(el){
-            if (el.nodeName != null && el.nodeName.toUpperCase() === 'SCRIPT' &&
-               (!el.type || el.type === 'text/javascript') && !el.src)
-              window['eval'].call(window, el.innerHTML)
-          })
+          parent.insertBefore(node, target);
+          //插入节点后，如果被插入的节点是SCRIPT，则执行里面的内容并将window设为上下文
+          if (parentInDocument) {
+            traverseNode(node, function(el){
+              if (el.nodeName != null && el.nodeName.toUpperCase() === 'SCRIPT' &&
+                  (!el.type || el.type === 'text/javascript') && !el.src) {
+                window['eval'].call(window, el.innerHTML);
+              }
+            })
+          }
         })
-      })
-    }
+      });
+    };
 
     // after    => insertAfter
     // prepend  => prependTo
     // before   => insertBefore
     // append   => appendTo
     $.fn[inside ? operator+'To' : 'insert'+(operatorIndex ? 'Before' : 'After')] = function(html){
-      $(html)[operator](this)
-      return this
+      $(html)[operator](this);
+      return this;
     }
-  })
+  });
 
   zepto.Z.prototype = Z.prototype = $.fn;
 
