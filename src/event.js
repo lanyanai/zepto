@@ -35,6 +35,12 @@
     if (event.ns) {
       var matcher = matcherFor(event.ns);//正则
     }
+    /*handlers针对每个元素的zid将事件存为数组，其数组元素是个对象，{
+      e: 事件名
+      ns: 事件命名空间
+      fn: 处理函数
+      sel:
+    }*/
     return (handlers[zid(element)] || []).filter(function(handler) {
 
       return handler
@@ -45,7 +51,7 @@
         //这样如果fn和handler.fn引用的是同一个函数，那么fn上应该也可相同的标示符，
         //这里就是通过这一点来判断两个变量是否引用的同一个函数
         && (!selector || handler.sel == selector);
-    })
+    });
   }
 
   //解析事件类型，返回一个包含事件名称和事件命名空间的对象
@@ -62,22 +68,25 @@
     return new RegExp('(?:^| )' + ns.replace(' ', ' .* ?') + '(?: |$)');
   }
 
-  //捕获事件
+  //通过给focus和blur事件设置为捕获来达到事件冒泡的目的
   function eventCapture(handler, captureSetting) {
     return handler.del &&
       (!focusinSupported && (handler.e in focus)) ||
       !!captureSetting;
   }
 
-
+  //修复不支持mouseenter和mouseleave的情况
   function realEvent(type) {
-    return hover[type] || (focusinSupported && focus[type]) || type
+    return hover[type] || (focusinSupported && focus[type]) || type;
   }
 
+
   function add(element, events, fn, data, selector, delegator, capture){
-    var id = zid(element), set = (handlers[id] || (handlers[id] = []))
+    var id = zid(element), set = (handlers[id] || (handlers[id] = []));
     events.split(/\s/).forEach(function(event){
-      if (event == 'ready') return $(document).ready(fn)
+      if (event == 'ready') {
+        return $(document).ready(fn);
+      }
       var handler   = parse(event)
       handler.fn    = fn
       handler.sel   = selector
