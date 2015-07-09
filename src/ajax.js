@@ -2,7 +2,7 @@
 //     (c) 2010-2015 Thomas Fuchs
 //     Zepto.js may be freely distributed under the MIT license.
 
-;(function($){
+(function($){
   var jsonpID = 0,
       document = window.document,
       key,
@@ -13,9 +13,9 @@
       jsonType = 'application/json',
       htmlType = 'text/html',
       blankRE = /^\s*$/,
-      originAnchor = document.createElement('a')
+      originAnchor = document.createElement('a');
 
-  originAnchor.href = window.location.href
+  originAnchor.href = window.location.href;
 
   // trigger a custom event and return false if it was cancelled
   function triggerAndReturn(context, eventName, data) {
