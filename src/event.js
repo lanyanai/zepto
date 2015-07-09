@@ -270,7 +270,7 @@
   $.fn.on = function(event, selector, data, callback, one){
     var autoRemove, delegator, $this = this;
     /* *
-    * event为对象{ click: function}
+    * event为对象时{ click: function}，分别调用
     * */
     if (event && !isString(event)) {
       $.each(event, function(type, fn){
@@ -279,77 +279,111 @@
       return $this;
     }
 
-    if (!isString(selector) && !isFunction(callback) && callback !== false)
-      callback = data, data = selector, selector = undefined;
-    if (callback === undefined || data === false) {
-      callback = data, data = undefined;
+    //无selector参数
+    if (!isString(selector) && !isFunction(callback) && callback !== false) {
+      callback = data;
+      data = selector;
+      selector = undefined;
     }
-
+    //无data参数
+    if (callback === undefined || data === false) {
+      callback = data;
+      data = undefined;
+    }
+    //返回false
     if (callback === false) {
       callback = returnFalse;
     }
 
     return $this.each(function(_, element){
-      if (one) autoRemove = function(e){
-        remove(element, e.type, callback)
-        return callback.apply(this, arguments)
+      if (one) {
+        autoRemove = function(e){
+          remove(element, e.type, callback);
+          return callback.apply(this, arguments);
+        };
       }
 
-      if (selector) delegator = function(e){
-        var evt, match = $(e.target).closest(selector, element).get(0)
-        if (match && match !== element) {
-          evt = $.extend(createProxy(e), {currentTarget: match, liveFired: element})
-          return (autoRemove || callback).apply(match, [evt].concat(slice.call(arguments, 1)))
-        }
+      //事件委托模式
+      if (selector) {
+        delegator = function(e){
+          var evt, match = $(e.target).closest(selector, element).get(0);
+          if (match && match !== element) {
+            evt = $.extend(createProxy(e), {
+              currentTarget: match,
+              liveFired: element
+            });
+            return (autoRemove || callback).apply(match, [evt].concat(slice.call(arguments, 1)));
+          }
+        };
       }
+      //绑定事件
+      add(element, event, callback, data, selector, delegator || autoRemove);
+    });
+  };
 
-      add(element, event, callback, data, selector, delegator || autoRemove)
-    })
-  }
-
+  //解绑事件
   $.fn.off = function(event, selector, callback){
-    var $this = this
+    var $this = this;
     if (event && !isString(event)) {
       $.each(event, function(type, fn){
-        $this.off(type, selector, fn)
-      })
-      return $this
+        $this.off(type, selector, fn);
+      });
+      return $this;
     }
 
-    if (!isString(selector) && !isFunction(callback) && callback !== false)
-      callback = selector, selector = undefined
+    //无select
+    if (!isString(selector) && !isFunction(callback) && callback !== false) {
+      callback = selector;
+      selector = undefined;
+    }
 
-    if (callback === false) callback = returnFalse
+
+    if (callback === false) {
+      callback = returnFalse;
+    }
 
     return $this.each(function(){
-      remove(this, event, callback, selector)
+      remove(this, event, callback, selector);
     })
-  }
+  };
 
+  //触发事件
   $.fn.trigger = function(event, args){
-    event = (isString(event) || $.isPlainObject(event)) ? $.Event(event) : compatible(event)
-    event._args = args
+    event = (isString(event) || $.isPlainObject(event)) ? $.Event(event) : compatible(event);
+    event._args = args;//额外参数
     return this.each(function(){
       // handle focus(), blur() by calling them directly
-      if (event.type in focus && typeof this[event.type] == "function") this[event.type]()
+      if (event.type in focus && typeof this[event.type] == "function") {
+        this[event.type]();
+      }
       // items in the collection might not be DOM elements
-      else if ('dispatchEvent' in this) this.dispatchEvent(event)
-      else $(this).triggerHandler(event, args)
+      else if ('dispatchEvent' in this) {
+        this.dispatchEvent(event);
+      }
+      else {
+        $(this).triggerHandler(event, args);
+      }
     })
-  }
+  };
 
   // triggers event handlers on current element just as if an event occurred,
   // doesn't trigger an actual event, doesn't bubble
+  //触发元素上绑定的指定类型的事件，但是不冒泡
   $.fn.triggerHandler = function(event, args){
     var e, result;
     this.each(function(i, element){
-      e = createProxy(isString(event) ? $.Event(event) : event)
-      e._args = args
-      e.target = element
+      e = createProxy(isString(event) ? $.Event(event) : event);
+      e._args = args;
+      e.target = element;
+      //遍历元素上绑定的指定类型的事件处理函数集，按顺序执行，如果执行过stopImmediatePropagation，
+      //那么e.isImmediatePropagationStopped()就会返回true,再外层函数返回false
+      //注意each里的回调函数指定返回false时，会跳出循环，这样就达到的停止执行回面函数的目的
       $.each(findHandlers(element, event.type || event), function(i, handler){
-        result = handler.proxy(e)
-        if (e.isImmediatePropagationStopped()) return false
-      })
+        result = handler.proxy(e);
+        if (e.isImmediatePropagationStopped()) {
+          return false;
+        }
+      });
     });
     return result;
   };
@@ -359,20 +393,26 @@
   'mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave '+
   'change select keydown keypress keyup error').split(' ').forEach(function(event) {
     $.fn[event] = function(callback) {
+      //如果有callback回调，则认为它是绑定
+      //如果没有callback回调，则让它主动触发
       return (0 in arguments) ?
         this.bind(event, callback) :
-        this.trigger(event)
+        this.trigger(event);
     }
   });
 
+  //根据参数创建一个event对象
   $.Event = function(type, props) {
+    //当type是个对象时，就是个带type的对象
     if (!isString(type)) {
       props = type;
       type = props.type;
     }
+    //创建一个event对象，如果是click,mouseover,mouseout时，创建的是MouseEvent,bubbles为是否冒泡
     var event = document.createEvent(specialEvents[type] || 'Events'), bubbles = true;
     if (props) {
       for (var name in props) {
+        //确保bubbles的值为true或false,并将props参数的属性扩展到新创建的event对象上
         (name == 'bubbles') ? (bubbles = !!props[name]) : (event[name] = props[name]);
       }
     }
