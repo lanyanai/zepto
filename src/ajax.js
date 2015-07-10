@@ -19,112 +19,147 @@
 
   // trigger a custom event and return false if it was cancelled
   function triggerAndReturn(context, eventName, data) {
-    var event = $.Event(eventName)
-    $(context).trigger(event, data)
-    return !event.isDefaultPrevented()
+    var event = $.Event(eventName);
+    $(context).trigger(event, data);
+    return !event.isDefaultPrevented();
   }
 
   // trigger an Ajax "global" event
+  //触发 ajax的全局事件
   function triggerGlobal(settings, context, eventName, data) {
-    if (settings.global) return triggerAndReturn(context || document, eventName, data)
+    if (settings.global) {
+      return triggerAndReturn(context || document, eventName, data);
+    }
   }
 
   // Number of active Ajax requests
-  $.active = 0
+  $.active = 0;
 
+  //从0到1时触发ajaxStart事件
+  //settings.global为true时表示需要触发全局ajax事件
+  //注意这里的$.active++ === 0很巧妙，用它来判断开始，因为只有$.active等于0时$.active++ === 0才成立
   function ajaxStart(settings) {
-    if (settings.global && $.active++ === 0) triggerGlobal(settings, null, 'ajaxStart')
+    if (settings.global && $.active++ === 0) {
+      triggerGlobal(settings, null, 'ajaxStart');
+    }
   }
+  //归0时，触发ajaxStop事件
+  //注意这里的 !(--$.active)同上面的异曲同工，--$.active为0，则表示$.active的值为1，这样用来判断结束，也很有意思
   function ajaxStop(settings) {
-    if (settings.global && !(--$.active)) triggerGlobal(settings, null, 'ajaxStop')
+    if (settings.global && !(--$.active)) {
+      triggerGlobal(settings, null, 'ajaxStop');
+    }
   }
 
   // triggers an extra global event "ajaxBeforeSend" that's like "ajaxSend" but cancelable
+  //触发全局ajaxBeforeSend事件，如果返回false,则取消此次请求
   function ajaxBeforeSend(xhr, settings) {
-    var context = settings.context
+    var context = settings.context;
     if (settings.beforeSend.call(context, xhr, settings) === false ||
-        triggerGlobal(settings, context, 'ajaxBeforeSend', [xhr, settings]) === false)
-      return false
+        triggerGlobal(settings, context, 'ajaxBeforeSend', [xhr, settings]) === false) {
+      return false;
+    }
 
-    triggerGlobal(settings, context, 'ajaxSend', [xhr, settings])
+    triggerGlobal(settings, context, 'ajaxSend', [xhr, settings]);
   }
+
+  //触发success事件
+  //都要触发complete事件
   function ajaxSuccess(data, xhr, settings, deferred) {
-    var context = settings.context, status = 'success'
-    settings.success.call(context, data, status, xhr)
-    if (deferred) deferred.resolveWith(context, [data, status, xhr])
-    triggerGlobal(settings, context, 'ajaxSuccess', [xhr, settings, data])
-    ajaxComplete(status, xhr, settings)
+    var context = settings.context, status = 'success';
+    settings.success.call(context, data, status, xhr);
+    if (deferred) {
+      deferred.resolveWith(context, [data, status, xhr]);
+    }
+    triggerGlobal(settings, context, 'ajaxSuccess', [xhr, settings, data]);
+    ajaxComplete(status, xhr, settings);
   }
   // type: "timeout", "error", "abort", "parsererror"
+  //触发error事件
+  //都要触发complete事件
   function ajaxError(error, type, xhr, settings, deferred) {
-    var context = settings.context
-    settings.error.call(context, xhr, type, error)
-    if (deferred) deferred.rejectWith(context, [xhr, type, error])
-    triggerGlobal(settings, context, 'ajaxError', [xhr, settings, error || type])
-    ajaxComplete(type, xhr, settings)
+    var context = settings.context;
+    settings.error.call(context, xhr, type, error);
+    if (deferred) {
+      deferred.rejectWith(context, [xhr, type, error]);
+    }
+    triggerGlobal(settings, context, 'ajaxError', [xhr, settings, error || type]);
+    ajaxComplete(type, xhr, settings);
   }
   // status: "success", "notmodified", "error", "timeout", "abort", "parsererror"
   function ajaxComplete(status, xhr, settings) {
-    var context = settings.context
-    settings.complete.call(context, xhr, status)
-    triggerGlobal(settings, context, 'ajaxComplete', [xhr, settings])
-    ajaxStop(settings)
+    var context = settings.context;
+    settings.complete.call(context, xhr, status);
+    triggerGlobal(settings, context, 'ajaxComplete', [xhr, settings]);
+    ajaxStop(settings);
   }
 
   // Empty function, used as default callback
   function empty() {}
 
+  //JSONP格式
   $.ajaxJSONP = function(options, deferred){
-    if (!('type' in options)) return $.ajax(options)
+    //无type指定为jsonp的话，使用正常ajax
+    if (!('type' in options)) {
+      return $.ajax(options);
+    }
 
     var _callbackName = options.jsonpCallback,
       callbackName = ($.isFunction(_callbackName) ?
         _callbackName() : _callbackName) || ('jsonp' + (++jsonpID)),
       script = document.createElement('script'),
-      originalCallback = window[callbackName],
+      originalCallback = window[callbackName],//保存原callback
       responseData,
       abort = function(errorType) {
-        $(script).triggerHandler('error', errorType || 'abort')
+        $(script).triggerHandler('error', errorType || 'abort');
       },
-      xhr = { abort: abort }, abortTimeout
+      xhr = { abort: abort }, abortTimeout;
 
-    if (deferred) deferred.promise(xhr)
+    if (deferred) {
+      deferred.promise(xhr);
+    }
 
     $(script).on('load error', function(e, errorType){
-      clearTimeout(abortTimeout)
-      $(script).off().remove()
+      clearTimeout(abortTimeout);
+      $(script).off().remove();
 
+      //error
       if (e.type == 'error' || !responseData) {
-        ajaxError(null, errorType || 'error', xhr, options, deferred)
+        ajaxError(null, errorType || 'error', xhr, options, deferred);
       } else {
-        ajaxSuccess(responseData[0], xhr, options, deferred)
+        //success
+        ajaxSuccess(responseData[0], xhr, options, deferred);
+      }
+      //加载完成之后重置回来，并且调用originalCallback
+      window[callbackName] = originalCallback;
+      if (responseData && $.isFunction(originalCallback)) {
+        originalCallback(responseData[0]);
       }
 
-      window[callbackName] = originalCallback
-      if (responseData && $.isFunction(originalCallback))
-        originalCallback(responseData[0])
-
-      originalCallback = responseData = undefined
-    })
+      originalCallback = responseData = undefined;
+    });
 
     if (ajaxBeforeSend(xhr, options) === false) {
-      abort('abort')
-      return xhr
+      abort('abort');
+      return xhr;
     }
 
     window[callbackName] = function(){
-      responseData = arguments
+      responseData = arguments;
+    };
+
+    //src加上callbackName
+    script.src = options.url.replace(/\?(.+)=\?/, '?$1=' + callbackName);
+    document.head.appendChild(script);
+
+    if (options.timeout > 0) {
+      abortTimeout = setTimeout(function(){
+        abort('timeout');
+      }, options.timeout);
     }
 
-    script.src = options.url.replace(/\?(.+)=\?/, '?$1=' + callbackName)
-    document.head.appendChild(script)
-
-    if (options.timeout > 0) abortTimeout = setTimeout(function(){
-      abort('timeout')
-    }, options.timeout)
-
-    return xhr
-  }
+    return xhr;
+  };
 
   $.ajaxSettings = {
     // Default type of request
@@ -143,7 +178,7 @@
     global: true,
     // Transport
     xhr: function () {
-      return new window.XMLHttpRequest()
+      return new window.XMLHttpRequest();
     },
     // MIME types mapping
     // IIS returns Javascript as "application/x-javascript"
@@ -162,51 +197,78 @@
     processData: true,
     // Whether the browser should be allowed to cache GET responses
     cache: true
-  }
+  };
 
+  //根据MIME返回相应的数据类型，用作ajax参数里的dataType用，设置预期返回的数据类型：Content-Type:text/html;charset=UTF-8
   function mimeToDataType(mime) {
-    if (mime) mime = mime.split(';', 2)[0]
+    if (mime) {
+      mime = mime.split(';', 2)[0];//数组最大长度
+    }
     return mime && ( mime == htmlType ? 'html' :
       mime == jsonType ? 'json' :
       scriptTypeRE.test(mime) ? 'script' :
-      xmlTypeRE.test(mime) && 'xml' ) || 'text'
+      xmlTypeRE.test(mime) && 'xml' ) || 'text';
   }
 
   function appendQuery(url, query) {
-    if (query == '') return url
-    return (url + '&' + query).replace(/[&?]{1,2}/, '?')
+    if (query == '') {
+      return url;
+    }
+    return (url + '&' + query).replace(/[&?]{1,2}/, '?');//将第一个&替换为?
   }
 
   // serialize payload and append it to the URL for GET requests
+  // 处理get参数
   function serializeData(options) {
-    if (options.processData && options.data && $.type(options.data) != "string")
-      options.data = $.param(options.data, options.traditional)
-    if (options.data && (!options.type || options.type.toUpperCase() == 'GET'))
-      options.url = appendQuery(options.url, options.data), options.data = undefined
+    //data变成字符串
+    if (options.processData && options.data && $.type(options.data) != "string") {
+      options.data = $.param(options.data, options.traditional);
+    }
+
+    if (options.data && (!options.type || options.type.toUpperCase() == 'GET')) {
+      options.url = appendQuery(options.url, options.data);
+      options.data = undefined;
+    }
   }
 
+  //ajax函数
   $.ajax = function(options){
     var settings = $.extend({}, options || {}),
         deferred = $.Deferred && $.Deferred(),
-        urlAnchor, hashIndex
-    for (key in $.ajaxSettings) if (settings[key] === undefined) settings[key] = $.ajaxSettings[key]
-
-    ajaxStart(settings)
-
-    if (!settings.crossDomain) {
-      urlAnchor = document.createElement('a')
-      urlAnchor.href = settings.url
-      // cleans up URL for .href (IE only), see https://github.com/madrobby/zepto/pull/1049
-      urlAnchor.href = urlAnchor.href
-      settings.crossDomain = (originAnchor.protocol + '//' + originAnchor.host) !== (urlAnchor.protocol + '//' + urlAnchor.host)
+        urlAnchor, hashIndex;
+    //复制默认值到settings
+    for (key in $.ajaxSettings) {
+      if (settings[key] === undefined) {
+        settings[key] = $.ajaxSettings[key];
+      }
     }
 
-    if (!settings.url) settings.url = window.location.toString()
-    if ((hashIndex = settings.url.indexOf('#')) > -1) settings.url = settings.url.slice(0, hashIndex)
-    serializeData(settings)
+    //开始ajax
+    ajaxStart(settings);
 
-    var dataType = settings.dataType, hasPlaceholder = /\?.+=\?/.test(settings.url)
-    if (hasPlaceholder) dataType = 'jsonp'
+    if (!settings.crossDomain) {
+      urlAnchor = document.createElement('a');
+      urlAnchor.href = settings.url;
+      // cleans up URL for .href (IE only), see https://github.com/madrobby/zepto/pull/1049
+      urlAnchor.href = urlAnchor.href;
+      //是否跨域
+      settings.crossDomain = (originAnchor.protocol + '//' + originAnchor.host) !== (urlAnchor.protocol + '//' + urlAnchor.host);
+    }
+    //设置url
+    if (!settings.url) {
+      settings.url = window.location.toString();
+    }
+
+    //去除hash之后
+    if ((hashIndex = settings.url.indexOf('#')) > -1) {
+      settings.url = settings.url.slice(0, hashIndex);
+    }
+    serializeData(settings);
+
+    var dataType = settings.dataType, hasPlaceholder = /\?.+=\?/.test(settings.url);
+    if (hasPlaceholder) {
+      dataType = 'jsonp';
+    }
 
     if (settings.cache === false || (
          (!options || options.cache !== true) &&
@@ -335,7 +397,7 @@
     return this
   }
 
-  var escape = encodeURIComponent
+  var escape = encodeURIComponent;
 
   function serialize(params, obj, traditional, scope){
     var type, array = $.isArray(obj), hash = $.isPlainObject(obj)
@@ -352,14 +414,19 @@
     })
   }
 
+  //
   $.param = function(obj, traditional){
-    var params = []
+    var params = [];
     params.add = function(key, value) {
-      if ($.isFunction(value)) value = value()
-      if (value == null) value = ""
-      this.push(escape(key) + '=' + escape(value))
-    }
-    serialize(params, obj, traditional)
-    return params.join('&').replace(/%20/g, '+')
+      if ($.isFunction(value)) {
+        value = value();
+      }
+      if (value == null) {
+        value = "";
+      }
+      this.push(escape(key) + '=' + escape(value));
+    };
+    serialize(params, obj, traditional);
+    return params.join('&').replace(/%20/g, '+');
   }
-})(Zepto)
+})(Zepto);
