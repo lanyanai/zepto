@@ -104,7 +104,7 @@
       return $.ajax(options);
     }
 
-    var _callbackName = options.jsonpCallback,
+    var _callbackName = options.jsonpCallback,//回调函数名
       callbackName = ($.isFunction(_callbackName) ?
         _callbackName() : _callbackName) || ('jsonp' + (++jsonpID)),
       script = document.createElement('script'),
@@ -265,156 +265,245 @@
     }
     serializeData(settings);
 
-    var dataType = settings.dataType, hasPlaceholder = /\?.+=\?/.test(settings.url);
+    var dataType = settings.dataType, hasPlaceholder = /\?.+=\?/.test(settings.url);//? ...=?匹配
+    //格式为jsonp
     if (hasPlaceholder) {
       dataType = 'jsonp';
     }
 
+    //不缓存，url加上时间戳
     if (settings.cache === false || (
          (!options || options.cache !== true) &&
          ('script' == dataType || 'jsonp' == dataType)
-        ))
-      settings.url = appendQuery(settings.url, '_=' + Date.now())
+        )) {
+      settings.url = appendQuery(settings.url, '_=' + Date.now());
+    }
 
+    //重写回调函数名，直接jsonp
     if ('jsonp' == dataType) {
-      if (!hasPlaceholder)
+      if (!hasPlaceholder) {
         settings.url = appendQuery(settings.url,
-          settings.jsonp ? (settings.jsonp + '=?') : settings.jsonp === false ? '' : 'callback=?')
-      return $.ajaxJSONP(settings, deferred)
+            settings.jsonp ? (settings.jsonp + '=?') : settings.jsonp === false ? '' : 'callback=?');
+      }
+      return $.ajaxJSONP(settings, deferred);
     }
 
     var mime = settings.accepts[dataType],
         headers = { },
-        setHeader = function(name, value) { headers[name.toLowerCase()] = [name, value] },
-        protocol = /^([\w-]+:)\/\//.test(settings.url) ? RegExp.$1 : window.location.protocol,
+        setHeader = function(name, value) {
+          headers[name.toLowerCase()] = [name, value];
+        },
+        protocol = /^([\w-]+:)\/\//.test(settings.url) ? RegExp.$1 : window.location.protocol,//何种协议,如果请求地址没有定请求协议，则与当前页面协议相同
         xhr = settings.xhr(),
         nativeSetHeader = xhr.setRequestHeader,
-        abortTimeout
+        abortTimeout;
 
-    if (deferred) deferred.promise(xhr)
-
-    if (!settings.crossDomain) setHeader('X-Requested-With', 'XMLHttpRequest')
-    setHeader('Accept', mime || '*/*')
-    if (mime = settings.mimeType || mime) {
-      if (mime.indexOf(',') > -1) mime = mime.split(',', 2)[0]
-      xhr.overrideMimeType && xhr.overrideMimeType(mime)
+    //deferred策略
+    if (deferred) {
+      deferred.promise(xhr);
     }
-    if (settings.contentType || (settings.contentType !== false && settings.data && settings.type.toUpperCase() != 'GET'))
-      setHeader('Content-Type', settings.contentType || 'application/x-www-form-urlencoded')
 
-    if (settings.headers) for (name in settings.headers) setHeader(name, settings.headers[name])
-    xhr.setRequestHeader = setHeader
+    if (!settings.crossDomain) {
+      setHeader('X-Requested-With', 'XMLHttpRequest');//如果没有跨域
+    }
+    setHeader('Accept', mime || '*/*');
+    if (mime = settings.mimeType || mime) {
+      if (mime.indexOf(',') > -1) {
+        mime = mime.split(',', 2)[0];
+      }
+      //强制mimeType
+      xhr.overrideMimeType && xhr.overrideMimeType(mime);
+    }
+    //如果不是GET请求，设置发送信息至服务器时内容编码类型
+    if (settings.contentType || (settings.contentType !== false && settings.data && settings.type.toUpperCase() != 'GET')) {
+      setHeader('Content-Type', settings.contentType || 'application/x-www-form-urlencoded');
+    }
+
+    if (settings.headers) {
+      for (name in settings.headers) {
+        setHeader(name, settings.headers[name]);
+      }
+    }
+    xhr.setRequestHeader = setHeader;
 
     xhr.onreadystatechange = function(){
       if (xhr.readyState == 4) {
-        xhr.onreadystatechange = empty
-        clearTimeout(abortTimeout)
-        var result, error = false
+        xhr.onreadystatechange = empty;
+        clearTimeout(abortTimeout);
+        var result, error = false;
+        //根据状态来判断请求是否成功
+        //状态>=200 && < 300 表示成功
+        //状态 == 304 表示文件未改动过，也可认为成功
+        //如果是取要本地文件那也可以认为是成功的，xhr.status == 0是在直接打开页面时发生请求时出现的状态，也就是不是用localhost的形式访问的页面的情况
         if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304 || (xhr.status == 0 && protocol == 'file:')) {
-          dataType = dataType || mimeToDataType(settings.mimeType || xhr.getResponseHeader('content-type'))
-          result = xhr.responseText
+          //获取返回的数据类型
+          dataType = dataType || mimeToDataType(settings.mimeType || xhr.getResponseHeader('content-type'));
+          result = xhr.responseText;
 
           try {
             // http://perfectionkills.com/global-eval-what-are-the-options/
-            if (dataType == 'script')    (1,eval)(result)
-            else if (dataType == 'xml')  result = xhr.responseXML
-            else if (dataType == 'json') result = blankRE.test(result) ? null : $.parseJSON(result)
-          } catch (e) { error = e }
-
-          if (error) ajaxError(error, 'parsererror', xhr, settings, deferred)
-          else ajaxSuccess(result, xhr, settings, deferred)
+            if (dataType == 'script')    {
+              (1,eval)(result);
+            }
+            else if (dataType == 'xml')  {
+              result = xhr.responseXML;
+            }
+            else if (dataType == 'json') {
+              result = blankRE.test(result) ? null : $.parseJSON(result);
+            }
+          } catch (e) {
+            error = e;
+          }
+          //如果解析出错，则执行全局parsererror事件
+          if (error) {
+            ajaxError(error, 'parsererror', xhr, settings, deferred);
+          }
+          //否则执行ajaxSuccess
+          else {
+            ajaxSuccess(result, xhr, settings, deferred);
+          }
         } else {
-          ajaxError(xhr.statusText || null, xhr.status ? 'error' : 'abort', xhr, settings, deferred)
+          //如果请求出错，则根据xhr.status来执行相应的错误处理函数
+          ajaxError(xhr.statusText || null, xhr.status ? 'error' : 'abort', xhr, settings, deferred);
         }
+      }
+    };
+
+    //如果ajaxBeforeSend函数返回的false，则取消此次请示
+    if (ajaxBeforeSend(xhr, settings) === false) {
+      xhr.abort();
+      ajaxError(null, 'abort', xhr, settings, deferred);
+      return xhr;
+    }
+
+    //设置请求头信息
+    if (settings.xhrFields) {
+      for (name in settings.xhrFields) {
+        xhr[name] = settings.xhrFields[name];
       }
     }
 
-    if (ajaxBeforeSend(xhr, settings) === false) {
-      xhr.abort()
-      ajaxError(null, 'abort', xhr, settings, deferred)
-      return xhr
+    //是否异步
+    var async = 'async' in settings ? settings.async : true;
+    //初始化请求
+    xhr.open(settings.type, settings.url, async, settings.username, settings.password);
+
+    for (name in headers) {
+      nativeSetHeader.apply(xhr, headers[name]);
     }
 
-    if (settings.xhrFields) for (name in settings.xhrFields) xhr[name] = settings.xhrFields[name]
-
-    var async = 'async' in settings ? settings.async : true
-    xhr.open(settings.type, settings.url, async, settings.username, settings.password)
-
-    for (name in headers) nativeSetHeader.apply(xhr, headers[name])
-
-    if (settings.timeout > 0) abortTimeout = setTimeout(function(){
-        xhr.onreadystatechange = empty
-        xhr.abort()
-        ajaxError(null, 'timeout', xhr, settings, deferred)
-      }, settings.timeout)
+    //当设置了settings.timeout，则在超时后取消请求，并执行timeout事件处理函数
+    if (settings.timeout > 0) {
+      abortTimeout = setTimeout(function(){
+        xhr.onreadystatechange = empty;
+        xhr.abort();
+        ajaxError(null, 'timeout', xhr, settings, deferred);
+      }, settings.timeout);
+    }
 
     // avoid sending empty string (#319)
-    xhr.send(settings.data ? settings.data : null)
-    return xhr
-  }
+    //请求
+    xhr.send(settings.data ? settings.data : null);
+    return xhr;
+  };
 
   // handle optional data/success arguments
+  //将参数转换成ajax函数指定的参数格式
   function parseArguments(url, data, success, dataType) {
-    if ($.isFunction(data)) dataType = success, success = data, data = undefined
-    if (!$.isFunction(success)) dataType = success, success = undefined
+    //无data,如果data是function，则认为它是请求成功后的回调
+    if ($.isFunction(data)) {
+      dataType = success;
+      success = data;
+      data = undefined;
+    }
+    //无success
+    if (!$.isFunction(success)) {
+      dataType = success;
+      success = undefined;
+    }
     return {
-      url: url
-    , data: data
-    , success: success
-    , dataType: dataType
+      url: url,
+      data: data,
+      success: success,
+      dataType: dataType
     }
   }
 
   $.get = function(/* url, data, success, dataType */){
-    return $.ajax(parseArguments.apply(null, arguments))
-  }
+    return $.ajax(parseArguments.apply(null, arguments));
+  };
 
   $.post = function(/* url, data, success, dataType */){
-    var options = parseArguments.apply(null, arguments)
-    options.type = 'POST'
-    return $.ajax(options)
-  }
+    var options = parseArguments.apply(null, arguments);
+    options.type = 'POST';
+    return $.ajax(options);
+  };
 
   $.getJSON = function(/* url, data, success */){
-    var options = parseArguments.apply(null, arguments)
-    options.dataType = 'json'
-    return $.ajax(options)
-  }
+    var options = parseArguments.apply(null, arguments);
+    options.dataType = 'json';
+    return $.ajax(options);
+  };
 
+  //原型上的方法
+  //这里的url可以是http://www.xxxx.com selector这种形式，就是对加载进来的HTML对行一个筛选
   $.fn.load = function(url, data, success){
-    if (!this.length) return this
+    if (!this.length) {
+      return this;
+    }
+    //将请求地址用空格分开
     var self = this, parts = url.split(/\s/), selector,
         options = parseArguments(url, data, success),
-        callback = options.success
-    if (parts.length > 1) options.url = parts[0], selector = parts[1]
+        callback = options.success;
+    if (parts.length > 1) {
+      options.url = parts[0];
+      selector = parts[1];
+    }
+    //设置html
+    //要对成功后的回调函数进行一个改写，因为需要将加载进来的HTML添加进当前集合
     options.success = function(response){
+      //selector就是对请求到的数据就行一个筛选的条件，比如只获取数据里的类名为.test的标签
       self.html(selector ?
         $('<div>').html(response.replace(rscript, "")).find(selector)
-        : response)
-      callback && callback.apply(self, arguments)
-    }
-    $.ajax(options)
-    return this
-  }
+        : response);
+      //这里才是你写的回调
+      callback && callback.apply(self, arguments);
+    };
+    $.ajax(options);
+    return this;
+  };
 
   var escape = encodeURIComponent;
 
+  //params是个有add的数组
   function serialize(params, obj, traditional, scope){
-    var type, array = $.isArray(obj), hash = $.isPlainObject(obj)
+    var type, array = $.isArray(obj), hash = $.isPlainObject(obj);
     $.each(obj, function(key, value) {
-      type = $.type(value)
-      if (scope) key = traditional ? scope :
-        scope + '[' + (hash || type == 'object' || type == 'array' ? key : '') + ']'
+      type = $.type(value);
+      //scope用作处理value也是object或者array的情况
+      //traditional表示是否以传统的方式拼接数据，
+      //传统的意思就是比如现有一个数据{a:[1,2,3]},转成查询字符串后结果为'a=1&a=2&a=3'，true
+      //非传统的的结果则是a[]=1&a[]=2&a[]=3，false,默认
+      if (scope) {
+        key = traditional ? scope :
+        scope + '[' + (hash || type == 'object' || type == 'array' ? key : '') + ']';
+      }
       // handle data in serializeArray() format
-      if (!scope && array) params.add(value.name, value.value)
+      //当处理的数据为[{name: , value: },{},{}]这种情况的时候，一般指的是序列化表单后的结果
+      if (!scope && array) {
+        params.add(value.name, value.value);
+      }
       // recurse into nested objects
-      else if (type == "array" || (!traditional && type == "object"))
-        serialize(params, value, traditional, key)
-      else params.add(key, value)
-    })
+      //当value值是数组或者是对象且不是按传统的方式序列化的时候，需要再次遍历value
+      else if (type == "array" || (!traditional && type == "object")) {
+        serialize(params, value, traditional, key);
+      } else {
+        params.add(key, value);
+      }
+    });
   }
 
-  //
+  //将obj转换为查询字符串的格式，traditional表示是否转换成传统的方式，至于传统的方式的意思看上面的注释
   $.param = function(obj, traditional){
     var params = [];
     params.add = function(key, value) {
@@ -426,6 +515,7 @@
       }
       this.push(escape(key) + '=' + escape(value));
     };
+    //注意这里将add方法定到params，所以下面serialize时才不需要返回数据
     serialize(params, obj, traditional);
     return params.join('&').replace(/%20/g, '+');
   }
