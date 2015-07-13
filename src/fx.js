@@ -2,6 +2,7 @@
 //     (c) 2010-2015 Thomas Fuchs
 //     Zepto.js may be freely distributed under the MIT license.
 
+//css3动画
 ;(function($, undefined){
   var prefix = '', eventPrefix,
     vendors = { Webkit: 'webkit', Moz: '', O: 'o' },
@@ -10,20 +11,28 @@
     transform,
     transitionProperty, transitionDuration, transitionTiming, transitionDelay,
     animationName, animationDuration, animationTiming, animationDelay,
-    cssReset = {}
+    cssReset = {};
 
-  function dasherize(str) { return str.replace(/([a-z])([A-Z])/, '$1-$2').toLowerCase() }
-  function normalizeEvent(name) { return eventPrefix ? eventPrefix + name : name.toLowerCase() }
+  //将驼峰式的字符串转成用-分隔的小写形式，如borderWidth ==> border-width
+  function dasherize(str) {
+    return str.replace(/([a-z])([A-Z])/, '$1-$2').toLowerCase();
+  }
 
+  //加上前缀
+  function normalizeEvent(name) {
+    return eventPrefix ? eventPrefix + name : name.toLowerCase();
+  }
+
+  //
   $.each(vendors, function(vendor, event){
     if (testEl.style[vendor + 'TransitionProperty'] !== undefined) {
-      prefix = '-' + vendor.toLowerCase() + '-'
-      eventPrefix = event
-      return false
+      prefix = '-' + vendor.toLowerCase() + '-';
+      eventPrefix = event;
+      return false;
     }
-  })
+  });
 
-  transform = prefix + 'transform'
+  transform = prefix + 'transform';
   cssReset[transitionProperty = prefix + 'transition-property'] =
   cssReset[transitionDuration = prefix + 'transition-duration'] =
   cssReset[transitionDelay    = prefix + 'transition-delay'] =
@@ -31,7 +40,7 @@
   cssReset[animationName      = prefix + 'animation-name'] =
   cssReset[animationDuration  = prefix + 'animation-duration'] =
   cssReset[animationDelay     = prefix + 'animation-delay'] =
-  cssReset[animationTiming    = prefix + 'animation-timing-function'] = ''
+  cssReset[animationTiming    = prefix + 'animation-timing-function'] = '';
 
   $.fx = {
     off: (eventPrefix === undefined && testEl.style.transitionProperty === undefined),
@@ -120,4 +129,4 @@
   }
 
   testEl = null
-})(Zepto)
+})(Zepto);
