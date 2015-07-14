@@ -23,7 +23,8 @@
     return eventPrefix ? eventPrefix + name : name.toLowerCase();
   }
 
-  //
+  //根据浏览器的特性设置CSS属性前轻辍和事件前辍，比如浏览器内核是webkit
+  //那么用于设置CSS属性的前辍prefix就等于'-webkit-',用来修正事件名的前辍eventPrefix就是Webkit
   $.each(vendors, function(vendor, event){
     if (testEl.style[vendor + 'TransitionProperty'] !== undefined) {
       prefix = '-' + vendor.toLowerCase() + '-';
@@ -43,90 +44,145 @@
   cssReset[animationTiming    = prefix + 'animation-timing-function'] = '';
 
   $.fx = {
-    off: (eventPrefix === undefined && testEl.style.transitionProperty === undefined),
+    off: (eventPrefix === undefined && testEl.style.transitionProperty === undefined),//是否支持css3动画
     speeds: { _default: 400, fast: 200, slow: 600 },
     cssPrefix: prefix,
     transitionEnd: normalizeEvent('TransitionEnd'),
     animationEnd: normalizeEvent('AnimationEnd')
-  }
+  };
 
   $.fn.animate = function(properties, duration, ease, callback, delay){
-    if ($.isFunction(duration))
-      callback = duration, ease = undefined, duration = undefined
-    if ($.isFunction(ease))
-      callback = ease, ease = undefined
-    if ($.isPlainObject(duration))
-      ease = duration.easing, callback = duration.complete, delay = duration.delay, duration = duration.duration
-    if (duration) duration = (typeof duration == 'number' ? duration :
-                    ($.fx.speeds[duration] || $.fx.speeds._default)) / 1000
-    if (delay) delay = parseFloat(delay) / 1000
-    return this.anim(properties, duration, ease, callback, delay)
-  }
+    //无duration、ease参数
+    if ($.isFunction(duration)) {
+      callback = duration;
+      ease = undefined;
+      duration = undefined;
+    }
+    //无ease参数
+    if ($.isFunction(ease)) {
+      callback = ease;
+      ease = undefined;
+    }
+    //duration是对象
+    if ($.isPlainObject(duration)) {
+      ease = duration.easing;
+      callback = duration.complete;
+      delay = duration.delay;
+      duration = duration.duration;
+    }
 
+    //将duration单位改为为秒
+    if (duration) {
+      duration = (typeof duration == 'number' ? duration :
+              ($.fx.speeds[duration] || $.fx.speeds._default)) / 1000;
+    }
+    if (delay) {
+      delay = parseFloat(delay) / 1000;
+    }
+    //调用anim
+    return this.anim(properties, duration, ease, callback, delay);
+  };
+
+  //实际动画函数
   $.fn.anim = function(properties, duration, ease, callback, delay){
     var key, cssValues = {}, cssProperties, transforms = '',
         that = this, wrappedCallback, endEvent = $.fx.transitionEnd,
-        fired = false
+        fired = false;
 
-    if (duration === undefined) duration = $.fx.speeds._default / 1000
-    if (delay === undefined) delay = 0
-    if ($.fx.off) duration = 0
+    if (duration === undefined) {
+      duration = $.fx.speeds._default / 1000;
+    }
+    if (delay === undefined) {
+      delay = 0;
+    }
+    //如果浏览器不支持CSS3的动画，则duration=0，意思就是直接跳转最终值
+    if ($.fx.off) {
+      duration = 0;
+    }
 
+    //如果properties是一个动画名keyframe
     if (typeof properties == 'string') {
       // keyframe animation
-      cssValues[animationName] = properties
-      cssValues[animationDuration] = duration + 's'
-      cssValues[animationDelay] = delay + 's'
-      cssValues[animationTiming] = (ease || 'linear')
-      endEvent = $.fx.animationEnd
+      cssValues[animationName] = properties;
+      cssValues[animationDuration] = duration + 's';
+      cssValues[animationDelay] = delay + 's';
+      cssValues[animationTiming] = (ease || 'linear');
+      endEvent = $.fx.animationEnd;
     } else {
-      cssProperties = []
+      cssProperties = [];
       // CSS transitions
-      for (key in properties)
-        if (supportedTransforms.test(key)) transforms += key + '(' + properties[key] + ') '
-        else cssValues[key] = properties[key], cssProperties.push(dasherize(key))
 
-      if (transforms) cssValues[transform] = transforms, cssProperties.push(transform)
+      for (key in properties) {
+        //如果设置 的CSS属性是变形之类的
+        if (supportedTransforms.test(key)) {
+          transforms += key + '(' + properties[key] + ') ';
+        }
+        else {
+          cssValues[key] = properties[key];
+          cssProperties.push(dasherize(key));
+        }
+      }
+
+      if (transforms) {
+        cssValues[transform] = transforms;
+        cssProperties.push(transform);
+      }
+      //使用transition动画
       if (duration > 0 && typeof properties === 'object') {
-        cssValues[transitionProperty] = cssProperties.join(', ')
-        cssValues[transitionDuration] = duration + 's'
-        cssValues[transitionDelay] = delay + 's'
-        cssValues[transitionTiming] = (ease || 'linear')
+        cssValues[transitionProperty] = cssProperties.join(', ');
+        cssValues[transitionDuration] = duration + 's';
+        cssValues[transitionDelay] = delay + 's';
+        cssValues[transitionTiming] = (ease || 'linear');
       }
     }
 
+    //包装回调函数
     wrappedCallback = function(event){
       if (typeof event !== 'undefined') {
-        if (event.target !== event.currentTarget) return // makes sure the event didn't bubble from "below"
-        $(event.target).unbind(endEvent, wrappedCallback)
-      } else
-        $(this).unbind(endEvent, wrappedCallback) // triggered by setTimeout
+        if (event.target !== event.currentTarget) {
+          return;
+        } // makes sure the event didn't bubble from "below"
+        $(event.target).unbind(endEvent, wrappedCallback);
+      } else {
+        $(this).unbind(endEvent, wrappedCallback); // triggered by setTimeout
+      }
 
-      fired = true
-      $(this).css(cssReset)
-      callback && callback.call(this)
-    }
+      fired = true;
+      //重置css
+      $(this).css(cssReset);
+      callback && callback.call(this);
+    };
+
+    //当可以执行动画的时候，那么动画结束后会执行回调，
+    //如果不支持持续动画,在直接设置最终值后，不会执行动画结束回调
     if (duration > 0){
-      this.bind(endEvent, wrappedCallback)
+      this.bind(endEvent, wrappedCallback);
       // transitionEnd is not always firing on older Android phones
       // so make sure it gets fired
       setTimeout(function(){
-        if (fired) return
-        wrappedCallback.call(that)
-      }, ((duration + delay) * 1000) + 25)
+        if (fired) {
+          return;
+        }
+        wrappedCallback.call(that);
+      }, ((duration + delay) * 1000) + 25);
     }
 
     // trigger page reflow so new elements can animate
-    this.size() && this.get(0).clientLeft
+    this.size() && this.get(0).clientLeft;
 
-    this.css(cssValues)
+    this.css(cssValues);
 
-    if (duration <= 0) setTimeout(function() {
-      that.each(function(){ wrappedCallback.call(this) })
-    }, 0)
+    //当持续时间小于等于0时，立刻还原
+    if (duration <= 0) {
+      setTimeout(function() {
+        that.each(function(){
+          wrappedCallback.call(this);
+        });
+      }, 0);
+    }
 
-    return this
-  }
+    return this;
+  };
 
-  testEl = null
+  testEl = null;
 })(Zepto);
