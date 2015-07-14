@@ -2,12 +2,14 @@
 //     (c) 2010-2015 Thomas Fuchs
 //     Zepto.js may be freely distributed under the MIT license.
 
+//重写zepto.matches与qsa,加上了对:的支持
 ;(function($){
-  var zepto = $.zepto, oldQsa = zepto.qsa, oldMatches = zepto.matches
+  var zepto = $.zepto, oldQsa = zepto.qsa, oldMatches = zepto.matches;
 
   function visible(elem){
-    elem = $(elem)
-    return !!(elem.width() || elem.height()) && elem.css("display") !== "none"
+    elem = $(elem);
+    //无高宽也视为不可见
+    return !!(elem.width() || elem.height()) && elem.css("display") !== "none";
   }
 
   // Implements a subset from:
@@ -22,64 +24,115 @@
   //   li:has(label:contains("foo")) + li:has(label:contains("bar"))
   //   ul.inner:first > li
   var filters = $.expr[':'] = {
-    visible:  function(){ if (visible(this)) return this },
-    hidden:   function(){ if (!visible(this)) return this },
-    selected: function(){ if (this.selected) return this },
-    checked:  function(){ if (this.checked) return this },
-    parent:   function(){ return this.parentNode },
-    first:    function(idx){ if (idx === 0) return this },
-    last:     function(idx, nodes){ if (idx === nodes.length - 1) return this },
-    eq:       function(idx, _, value){ if (idx === value) return this },
-    contains: function(idx, _, text){ if ($(this).text().indexOf(text) > -1) return this },
-    has:      function(idx, _, sel){ if (zepto.qsa(this, sel).length) return this }
-  }
+    visible: function(){
+      if (visible(this)) {
+        return this;
+      }
+    },
+    hidden: function(){
+      if (!visible(this)) {
+        return this;
+      }
+    },
+    selected: function(){
+      if (this.selected) {
+        return this;
+      }
+    },
+    checked: function(){
+      if (this.checked) {
+        return this;
+      }
+    },
+    parent: function(){
+      return this.parentNode;
+    },
+    first: function(idx){
+      if (idx === 0) {
+        return this
+      }
+    },
+    last: function(idx, nodes){
+      if (idx === nodes.length - 1) {
+        return this
+      }
+    },
+    eq: function(idx, _, value){
+      if (idx === value) {
+        return this
+      }
+    },
+    contains: function(idx, _, text){
+      if ($(this).text().indexOf(text) > -1) {
+        return this
+      }
+    },
+    has: function(idx, _, sel){
+      if (zepto.qsa(this, sel).length) {
+        return this
+      }
+    }
+  };
 
   var filterRe = new RegExp('(.*):(\\w+)(?:\\(([^)]+)\\))?$\\s*'),
       childRe  = /^\s*>/,
-      classTag = 'Zepto' + (+new Date())
+      classTag = 'Zepto' + (+new Date());
 
+  //预处理selector
   function process(sel, fn) {
     // quote the hash in `a[href^=#]` expression
-    sel = sel.replace(/=#\]/g, '="#"]')
-    var filter, arg, match = filterRe.exec(sel)
+    sel = sel.replace(/=#\]/g, '="#"]');
+    var filter, arg, match = filterRe.exec(sel);
     if (match && match[2] in filters) {
-      filter = filters[match[2]], arg = match[3]
-      sel = match[1]
+      filter = filters[match[2]];//得到filter函数
+      arg = match[3];//filter函数参数
+      sel = match[1];//前部select
       if (arg) {
-        var num = Number(arg)
-        if (isNaN(num)) arg = arg.replace(/^["']|["']$/g, '')
-        else arg = num
+        var num = Number(arg);
+        if (isNaN(num)) {
+          arg = arg.replace(/^["']|["']$/g, '');
+        } else {
+          arg = num;
+        }
       }
     }
-    return fn(sel, filter, arg)
+    return fn(sel, filter, arg);
   }
 
+  //重写qsa方法
   zepto.qsa = function(node, selector) {
     return process(selector, function(sel, filter, arg){
       try {
-        var taggedParent
-        if (!sel && filter) sel = '*'
-        else if (childRe.test(sel))
+        var taggedParent;
+        if (!sel && filter) {
+          sel = '*';
+        } else if (childRe.test(sel)) {
           // support "> *" child queries by tagging the parent node with a
           // unique class and prepending that classname onto the selector
-          taggedParent = $(node).addClass(classTag), sel = '.'+classTag+' '+sel
+          taggedParent = $(node).addClass(classTag);
+          sel = '.'+classTag+' '+sel;
+        }
 
-        var nodes = oldQsa(node, sel)
+        var nodes = oldQsa(node, sel);
       } catch(e) {
-        console.error('error performing selector: %o', selector)
-        throw e
+        console.error('error performing selector: %o', selector);
+        throw e;
       } finally {
-        if (taggedParent) taggedParent.removeClass(classTag)
+        if (taggedParent) {
+          taggedParent.removeClass(classTag);
+        }
       }
       return !filter ? nodes :
-        zepto.uniq($.map(nodes, function(n, i){ return filter.call(n, i, nodes, arg) }))
-    })
-  }
+        zepto.uniq($.map(nodes, function(n, i){
+          return filter.call(n, i, nodes, arg);
+        }));
+    });
+  };
 
   zepto.matches = function(node, selector){
     return process(selector, function(sel, filter, arg){
       return (!sel || oldMatches(node, sel)) &&
-        (!filter || filter.call(node, null, arg) === node)
-    })
-  }
-})(Zepto)
+        (!filter || filter.call(node, null, arg) === node);
+    });
+  };
+})(Zepto);

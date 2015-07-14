@@ -26,7 +26,7 @@
     return el.animate(props, speed, null, callback);
   }
 
-  //改变透明度隐藏，先调用origHide
+  //先透明动画，再隐藏
   function hide(el, speed, scale, callback) {
     return anim(el, speed, 0, scale, function(){
       origHide.call($(this));
@@ -34,7 +34,7 @@
     })
   }
 
-  //先调用origshow方法
+  //先恢复display，然后开始动画
   $.fn.show = function(speed, callback) {
     origShow.call(this);
     if (speed === undefined) {
@@ -71,6 +71,7 @@
     return anim(this, speed, opacity, null, callback);
   };
 
+  //先还原display，然后fadeTo
   $.fn.fadeIn = function(speed, callback) {
     var target = this.css('opacity');
     if (target > 0) {

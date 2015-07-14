@@ -4,8 +4,8 @@
 //
 //     Some code (c) 2005, 2013 jQuery Foundation, Inc. and other contributors
 
-;(function($){
-  var slice = Array.prototype.slice
+(function($){
+  var slice = Array.prototype.slice;
 
   function Deferred(func) {
     var tuples = [
@@ -17,11 +17,11 @@
         state = "pending",
         promise = {
           state: function() {
-            return state
+            return state;
           },
           always: function() {
-            deferred.done(arguments).fail(arguments)
-            return this
+            deferred.done(arguments).fail(arguments);
+            return this;
           },
           then: function(/* fnDone [, fnFailed [, fnProgress]] */) {
             var fns = arguments
@@ -50,13 +50,13 @@
             return obj != null ? $.extend( obj, promise ) : promise
           }
         },
-        deferred = {}
+        deferred = {};
 
     $.each(tuples, function(i, tuple){
       var list = tuple[2],
-          stateString = tuple[3]
+          stateString = tuple[3];
 
-      promise[tuple[1]] = list.add
+      promise[tuple[1]] = list.add;
 
       if (stateString) {
         list.add(function(){
@@ -114,5 +114,5 @@
     return deferred.promise()
   }
 
-  $.Deferred = Deferred
-})(Zepto)
+  $.Deferred = Deferred;
+})(Zepto);
