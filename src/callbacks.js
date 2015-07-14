@@ -2,15 +2,16 @@
 //     (c) 2010-2015 Thomas Fuchs
 //     Zepto.js may be freely distributed under the MIT license.
 
-;(function($){
+(function($){
   // Create a collection of callbacks to be fired in a sequence, with configurable behaviour
   // Option flags:
   //   - once: Callbacks fired at most one time.
   //   - memory: Remember the most recent context and arguments
   //   - stopOnFalse: Cease iterating over callback list
   //   - unique: Permit adding at most one instance of the same callback
+  //Callbacks回调函数方面
   $.Callbacks = function(options) {
-    options = $.extend({}, options)
+    options = $.extend({}, options);
 
     var memory, // Last fire value (for non-forgettable lists)
         fired,  // Flag to know if list was already fired
@@ -21,23 +22,28 @@
         list = [], // Actual callback list
         stack = !options.once && [], // Stack of fire calls for repeatable lists
         fire = function(data) {
-          memory = options.memory && data
-          fired = true
-          firingIndex = firingStart || 0
-          firingStart = 0
-          firingLength = list.length
-          firing = true
+          memory = options.memory && data;
+          fired = true;
+          firingIndex = firingStart || 0;
+          firingStart = 0;
+          firingLength = list.length;
+          firing = true;
           for ( ; list && firingIndex < firingLength ; ++firingIndex ) {
             if (list[firingIndex].apply(data[0], data[1]) === false && options.stopOnFalse) {
-              memory = false
-              break
+              memory = false;
+              break;
             }
           }
-          firing = false
+          firing = false;
           if (list) {
-            if (stack) stack.length && fire(stack.shift())
-            else if (memory) list.length = 0
-            else Callbacks.disable()
+            if (stack) {
+              stack.length && fire(stack.shift());
+            } else if (memory) {
+              list.length = 0;
+            }
+            else {
+              Callbacks.disable();
+            }
           }
         },
 
@@ -115,8 +121,8 @@
           fired: function() {
             return !!fired
           }
-        }
+        };
 
-    return Callbacks
+    return Callbacks;
   }
-})(Zepto)
+})(Zepto);
