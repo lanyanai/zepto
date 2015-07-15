@@ -4,6 +4,7 @@
 //
 //     Some code (c) 2005, 2013 jQuery Foundation, Inc. and other contributors
 
+//延迟对象
 (function($){
   var slice = Array.prototype.slice;
 
@@ -24,95 +25,105 @@
             return this;
           },
           then: function(/* fnDone [, fnFailed [, fnProgress]] */) {
-            var fns = arguments
-            return Deferred(function(defer){
+            var fns = arguments;
+            //新的deferred对象
+            return Deferred(function(defer){//参数为新构建的defer
               $.each(tuples, function(i, tuple){
-                var fn = $.isFunction(fns[i]) && fns[i]
+                var fn = $.isFunction(fns[i]) && fns[i];
+                //添加对应的function
                 deferred[tuple[1]](function(){
-                  var returned = fn && fn.apply(this, arguments)
+                  var returned = fn && fn.apply(this, arguments);
                   if (returned && $.isFunction(returned.promise)) {
                     returned.promise()
                       .done(defer.resolve)
                       .fail(defer.reject)
-                      .progress(defer.notify)
+                      .progress(defer.notify);
                   } else {
                     var context = this === promise ? defer.promise() : this,
-                        values = fn ? [returned] : arguments
-                    defer[tuple[0] + "With"](context, values)
+                        values = fn ? [returned] : arguments;
+                    defer[tuple[0] + "With"](context, values);
                   }
-                })
-              })
-              fns = null
-            }).promise()
+                });
+              });
+              fns = null;
+            }).promise();
           },
-
+          //无参数的话则返回promise对象，无触发的方法
           promise: function(obj) {
-            return obj != null ? $.extend( obj, promise ) : promise
+            return obj != null ? $.extend( obj, promise ) : promise;
           }
         },
         deferred = {};
 
     $.each(tuples, function(i, tuple){
-      var list = tuple[2],
+      var list = tuple[2],//Callback对象
           stateString = tuple[3];
 
-      promise[tuple[1]] = list.add;
+      promise[tuple[1]] = list.add;//promise添加done fail process方法
 
+      //有状态
       if (stateString) {
         list.add(function(){
-          state = stateString
-        }, tuples[i^1][2].disable, tuples[2][2].lock)
+          state = stateString;
+        }, tuples[i^1][2].disable, tuples[2][2].lock);//加上三个函数
       }
 
+      //给deferred添加resolve/reject/notify/resolveWith/rejectWith/notifyWith方法，实际是fireWith
       deferred[tuple[0]] = function(){
-        deferred[tuple[0] + "With"](this === deferred ? promise : this, arguments)
-        return this
-      }
-      deferred[tuple[0] + "With"] = list.fireWith
-    })
+        deferred[tuple[0] + "With"](this === deferred ? promise : this, arguments);
+        return this;
+      };
+      deferred[tuple[0] + "With"] = list.fireWith;
+    });
 
-    promise.promise(deferred)
-    if (func) func.call(deferred, deferred)
-    return deferred
+    //给deferred加上promise方法
+    promise.promise(deferred);
+    if (func) {
+      func.call(deferred, deferred);
+    }
+    return deferred;
   }
 
   $.when = function(sub) {
-    var resolveValues = slice.call(arguments),
+    var resolveValues = slice.call(arguments),//Deferred对象数组
         len = resolveValues.length,
         i = 0,
         remain = len !== 1 || (sub && $.isFunction(sub.promise)) ? len : 0,
-        deferred = remain === 1 ? sub : Deferred(),
+        deferred = remain === 1 ? sub : Deferred(),//只有一个参数的话，直接使用参数
         progressValues, progressContexts, resolveContexts,
+        //生成update函数
         updateFn = function(i, ctx, val){
           return function(value){
-            ctx[i] = this
-            val[i] = arguments.length > 1 ? slice.call(arguments) : value
+            ctx[i] = this;
+            val[i] = arguments.length > 1 ? slice.call(arguments) : value;
             if (val === progressValues) {
-              deferred.notifyWith(ctx, val)
-            } else if (!(--remain)) {
-              deferred.resolveWith(ctx, val)
+              deferred.notifyWith(ctx, val);
+            } else if (!(--remain)) {//remain到0，触发deferred
+              deferred.resolveWith(ctx, val);
             }
           }
-        }
+        };
 
     if (len > 1) {
-      progressValues = new Array(len)
-      progressContexts = new Array(len)
-      resolveContexts = new Array(len)
+      progressValues = new Array(len);
+      progressContexts = new Array(len);
+      resolveContexts = new Array(len);
       for ( ; i < len; ++i ) {
         if (resolveValues[i] && $.isFunction(resolveValues[i].promise)) {
           resolveValues[i].promise()
             .done(updateFn(i, resolveContexts, resolveValues))
             .fail(deferred.reject)
-            .progress(updateFn(i, progressContexts, progressValues))
+            .progress(updateFn(i, progressContexts, progressValues));
         } else {
-          --remain
+          --remain;
         }
       }
     }
-    if (!remain) deferred.resolveWith(resolveContexts, resolveValues)
-    return deferred.promise()
-  }
+    if (!remain) {
+      deferred.resolveWith(resolveContexts, resolveValues);
+    }
+    return deferred.promise();
+  };
 
   $.Deferred = Deferred;
 })(Zepto);
