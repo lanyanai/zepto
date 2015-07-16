@@ -34,11 +34,13 @@
                 deferred[tuple[1]](function(){
                   var returned = fn && fn.apply(this, arguments);
                   if (returned && $.isFunction(returned.promise)) {
+                    //返回为deferred对象的话，返回的deferred对象状态会触发新的deferred对象
                     returned.promise()
                       .done(defer.resolve)
                       .fail(defer.reject)
                       .progress(defer.notify);
                   } else {
+                    //不是deferred对象的话，使用返回值触发新deferred对象
                     var context = this === promise ? defer.promise() : this,
                         values = fn ? [returned] : arguments;
                     defer[tuple[0] + "With"](context, values);
