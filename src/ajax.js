@@ -158,7 +158,7 @@
       }, options.timeout);
     }
 
-    return xhr;
+    return xhr;//经过deferred包装的xhr对象
   };
 
   $.ajaxSettings = {
