@@ -53,6 +53,7 @@
       && event.isPrimary;
   }
 
+  //是否pointer事件
   function isPointerEventType(e, type){
     return (e.type == 'pointer'+type ||
       e.type.toLowerCase() == 'mspointer'+type);
@@ -67,6 +68,7 @@
     }
 
     $(document)
+        //IE的手势
       .bind('MSGestureEnd', function(e){
         var swipeDirectionFromVelocity =
           e.velocityX > 1 ? 'Right' : e.velocityX < -1 ? 'Left' : e.velocityY > 1 ? 'Down' : e.velocityY < -1 ? 'Up' : null;
@@ -88,17 +90,17 @@
           touch.y2 = undefined;
         }
         now = Date.now();
-        delta = now - (touch.last || now);
+        delta = now - (touch.last || now);//上次有时间
         touch.el = $('tagName' in firstTouch.target ?
           firstTouch.target : firstTouch.target.parentNode);
         touchTimeout && clearTimeout(touchTimeout);
         touch.x1 = firstTouch.pageX;
         touch.y1 = firstTouch.pageY;
         if (delta > 0 && delta <= 250) {
-          touch.isDoubleTap = true;
+          touch.isDoubleTap = true;//双击
         }
         touch.last = now;
-        longTapTimeout = setTimeout(longTap, longTapDelay);
+        longTapTimeout = setTimeout(longTap, longTapDelay);//750ms表示长按
         // adds the current touch contact for IE gesture recognition
         if (gesture && _isPointerType) {
           gesture.addPointer(e.pointerId);
@@ -106,19 +108,23 @@
       })
       .on('touchmove MSPointerMove pointermove', function(e){
         if((_isPointerType = isPointerEventType(e, 'move')) &&
-          !isPrimaryTouch(e)) return
-        firstTouch = _isPointerType ? e : e.touches[0]
-        cancelLongTap()
-        touch.x2 = firstTouch.pageX
-        touch.y2 = firstTouch.pageY
+          !isPrimaryTouch(e)) {
+          return;
+        }
+        firstTouch = _isPointerType ? e : e.touches[0];
+        cancelLongTap();//触发move就取消longtap
+        touch.x2 = firstTouch.pageX;
+        touch.y2 = firstTouch.pageY;
 
-        deltaX += Math.abs(touch.x1 - touch.x2)
-        deltaY += Math.abs(touch.y1 - touch.y2)
+        deltaX += Math.abs(touch.x1 - touch.x2);
+        deltaY += Math.abs(touch.y1 - touch.y2);
       })
       .on('touchend MSPointerUp pointerup', function(e){
         if((_isPointerType = isPointerEventType(e, 'up')) &&
-          !isPrimaryTouch(e)) return
-        cancelLongTap()
+          !isPrimaryTouch(e)) {
+          return;
+        }
+        cancelLongTap();//取消longtap
 
         // swipe
         if ((touch.x2 && Math.abs(touch.x1 - touch.x2) > 30) ||
@@ -141,29 +147,33 @@
 
               // trigger universal 'tap' with the option to cancelTouch()
               // (cancelTouch cancels processing of single vs double taps for faster 'tap' response)
-              var event = $.Event('tap')
+              var event = $.Event('tap');
               event.cancelTouch = cancelAll;
               touch.el.trigger(event);
 
               // trigger double tap immediately
               if (touch.isDoubleTap) {
-                if (touch.el) touch.el.trigger('doubleTap')
-                touch = {}
+                if (touch.el) {
+                  touch.el.trigger('doubleTap');
+                }
+                touch = {};
               }
 
               // trigger single tap after 250ms of inactivity
               else {
                 touchTimeout = setTimeout(function(){
-                  touchTimeout = null
-                  if (touch.el) touch.el.trigger('singleTap')
-                  touch = {}
-                }, 250)
+                  touchTimeout = null;
+                  if (touch.el) {
+                    touch.el.trigger('singleTap');
+                  }
+                  touch = {};
+                }, 250);
               }
-            }, 0)
+            }, 0);
           } else {
-            touch = {}
+            touch = {};
           }
-          deltaX = deltaY = 0
+          deltaX = deltaY = 0;
 
       })
       // when the browser window loses focus,
